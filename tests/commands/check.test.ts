@@ -35,7 +35,7 @@ function makeInference(): InferenceAdapter {
 
 const SAMPLE_EVALS: EvalsFile = {
   skill_name: 'test-skill',
-  generated_by: 'snapeval v0.1.0',
+  generated_by: 'snapeval v1.0.0',
   evals: [
     { id: 1, prompt: 'Hello world', expected_output: 'Greeting', assertions: [] },
     { id: 2, prompt: 'Goodbye', expected_output: 'Farewell', assertions: [] },
@@ -208,7 +208,7 @@ describe('checkCommand', () => {
   it('handles single-scenario evals file', async () => {
     const singleEval: EvalsFile = {
       skill_name: 'single-skill',
-      generated_by: 'snapeval v0.1.0',
+      generated_by: 'snapeval v1.0.0',
       evals: [{ id: 1, prompt: 'only prompt', expected_output: 'ok', assertions: [] }],
     };
     writeEvals(singleEval);

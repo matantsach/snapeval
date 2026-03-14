@@ -56,7 +56,7 @@ describe('initCommand', () => {
 
     const evalsFile = JSON.parse(fs.readFileSync(evalsPath, 'utf-8'));
     expect(evalsFile.skill_name).toBe('my-skill');
-    expect(evalsFile.generated_by).toBe('snapeval v0.1.0');
+    expect(evalsFile.generated_by).toBe('snapeval v1.0.0');
     expect(evalsFile.evals).toHaveLength(2);
   });
 

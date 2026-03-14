@@ -64,7 +64,7 @@ describe('generateEvals', () => {
     const result = await generateEvals('skill content', 'fallback-name', inference);
 
     expect(result.skill_name).toBe('test-skill');
-    expect(result.generated_by).toBe('snapeval v0.1.0');
+    expect(result.generated_by).toBe('snapeval v1.0.0');
     expect(result.evals).toHaveLength(2);
     expect(result.evals[0].id).toBe(1);
     expect(result.evals[0].prompt).toBe('Hello, how are you?');

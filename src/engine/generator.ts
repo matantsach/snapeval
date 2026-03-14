@@ -49,7 +49,7 @@ export async function generateEvals(
   const parsed = JSON.parse(extractJSON(response));
   return {
     skill_name: parsed.skill_name || skillName,
-    generated_by: 'snapeval v0.1.0',
+    generated_by: 'snapeval v1.0.0',
     evals: parsed.evals.map((e: any, i: number) => ({
       id: e.id || i + 1,
       prompt: e.prompt,

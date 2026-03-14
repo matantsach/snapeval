@@ -3,6 +3,7 @@
 Semantic snapshot testing for AI skills. Zero assertions. AI-driven. Free inference.
 
 [![CI](https://github.com/matantsach/snapeval/actions/workflows/ci.yml/badge.svg)](https://github.com/matantsach/snapeval/actions/workflows/ci.yml)
+[![npm version](https://img.shields.io/npm/v/snapeval.svg)](https://www.npmjs.com/package/snapeval)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 snapeval evaluates [agentskills.io](https://agentskills.io) skills through semantic snapshot testing. It generates test cases from your skill's `SKILL.md`, captures baseline outputs, and detects regressions through a tiered comparison pipeline — all with zero manual test authoring.
@@ -19,16 +20,28 @@ snapeval evaluates [agentskills.io](https://agentskills.io) skills through seman
 
 ### As a Copilot CLI Plugin
 
+Install directly from the GitHub repo:
+
 ```bash
-gh copilot plugin install snapeval
+gh copilot -- plugin install matantsach/snapeval
 ```
 
-Then in Copilot CLI:
+Or register the marketplace first, then install by name:
+
+```bash
+gh copilot -- plugin marketplace add matantsach/snapeval
+gh copilot -- plugin install snapeval@snapeval-marketplace
 ```
-@snapeval evaluate my-skill
-@snapeval check my-skill
-@snapeval approve
+
+Then in Copilot CLI interactive mode, just ask naturally:
+
 ```
+> evaluate my code-reviewer skill
+> check skills/code-reviewer for regressions
+> approve scenario 3
+```
+
+The agent will use the snapeval skill automatically based on your prompt.
 
 ### As a CLI
 
@@ -40,7 +53,25 @@ npx snapeval approve [--scenario N]  # Accept new behavior as baseline
 npx snapeval report <skill-path>     # Generate benchmark.json
 ```
 
+### Local Development
+
+For development without `npx`, clone and use `tsx` directly:
+
+```bash
+git clone https://github.com/matantsach/snapeval.git
+cd snapeval && npm install
+npx tsx bin/snapeval.ts init <skill-path>
+```
+
+Or load as a local plugin during development:
+
+```bash
+gh copilot -- --plugin-dir /path/to/snapeval
+```
+
 ### In CI
+
+Commit your `evals.json` and `snapshots/` directory, then add a workflow:
 
 ```yaml
 # .github/workflows/skill-eval.yml
@@ -55,10 +86,11 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - run: npx snapeval check skills/my-skill --ci
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - run: npm ci
+      - run: npx tsx bin/snapeval.ts check skills/my-skill --ci --skip-embedding
 ```
+
+> **Note:** The `--skip-embedding` flag runs Tier 1 (schema) and Tier 3 (LLM judge) only, skipping Tier 2 which requires the GitHub Models embedding API. For Tier 1-only checks (fastest, free, no API needed), committed baselines with stable output structures will pass without any inference calls.
 
 ## How It Works
 
@@ -114,6 +146,30 @@ Create `snapeval.config.json` in your skill or project root:
 ```
 
 CLI flags override config file values.
+
+## CLI Reference
+
+```
+snapeval init [skill-dir]         Generate test cases from SKILL.md using AI
+snapeval capture [skill-dir]      Run skill against all scenarios, save baselines
+snapeval check [skill-dir]        Compare current output against baselines
+snapeval approve [skill-dir]      Approve regressed scenarios as new baselines
+snapeval report [skill-dir]       Write results to evals/results/iteration-N/
+```
+
+**Common flags:**
+
+| Flag | Description | Default |
+|------|-------------|---------|
+| `--adapter <name>` | Skill adapter | `copilot-cli` |
+| `--inference <name>` | Inference adapter | `auto` |
+| `--threshold <n>` | Embedding similarity threshold | `0.85` |
+| `--budget <amount>` | Spend cap in USD | `unlimited` |
+| `--runs <n>` | Baseline runs per scenario | `1` |
+| `--ci` | CI mode: exit 1 on regressions | off |
+| `--skip-embedding` | Skip Tier 2 (embedding) | off |
+| `--scenario <ids>` | Comma-separated scenario IDs | all |
+| `--verbose` | Verbose output | off |
 
 ## Architecture
 
