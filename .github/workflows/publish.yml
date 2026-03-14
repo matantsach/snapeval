@@ -26,10 +26,4 @@ jobs:
       - run: npm run build
       - run: npm test
 
-      # First publish uses NPM_TOKEN (granular access token).
-      # After the package exists on npm, configure Trusted Publishing
-      # at https://www.npmjs.com/package/snapeval/access and remove
-      # the NODE_AUTH_TOKEN line below.
       - run: npm publish --access public --provenance
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
