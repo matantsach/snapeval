@@ -20,7 +20,7 @@ describe('CopilotCLIAdapter', () => {
   });
 
   describe('invoke()', () => {
-    it('calls execFile with gh copilot -p prompt --skill skillPath', async () => {
+    it('calls execFile with gh copilot -- -p prompt --silent', async () => {
       mockExecFile.mockImplementation((_cmd, _args, _opts, callback) => {
         callback(null, 'skill output\n', '');
       });
@@ -32,10 +32,9 @@ describe('CopilotCLIAdapter', () => {
       const [cmd, args] = mockExecFile.mock.calls[0] as [string, string[]];
       expect(cmd).toBe('gh');
       expect(args).toContain('copilot');
+      expect(args).toContain('--');
       expect(args).toContain('-p');
-      expect(args).toContain('what is the answer?');
-      expect(args).toContain('--skill');
-      expect(args).toContain('/path/to/skill');
+      expect(args).toContain('--silent');
     });
 
     it('returns trimmed stdout as raw output', async () => {
@@ -104,11 +103,11 @@ describe('CopilotCLIAdapter', () => {
       expect(available).toBe(false);
     });
 
-    it('calls gh copilot --version to check availability', async () => {
-      mockExecFileSync.mockReturnValue('version string');
+    it('calls gh copilot --help to check availability', async () => {
+      mockExecFileSync.mockReturnValue('help output');
       const adapter = new CopilotCLIAdapter();
       await adapter.isAvailable();
-      expect(mockExecFileSync).toHaveBeenCalledWith('gh', ['copilot', '--version'], expect.any(Object));
+      expect(mockExecFileSync).toHaveBeenCalledWith('gh', ['copilot', '--help'], expect.any(Object));
     });
   });
 
