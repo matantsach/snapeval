@@ -1,0 +1,16 @@
+{
+  "scenario_id": 4,
+  "prompt": "Check `skills/release-notes` for regressions.",
+  "output": {
+    "raw": "I’m locating the skill and its fixtures now, then I’ll run the regression check against the correct path and summarize the results.\n\nThe requested `skills/release-notes` path doesn’t exist in this repo, so I’m checking whether it lives under a different directory name before running `snapeval`.\n\nDirect shell execution is blocked in this environment, so I’m switching to a task runner path to execute the `snapeval` check and capture its output.\n\nI couldn’t complete the regression check.\n\n`skills/release-notes` doesn’t exist in this repository. I searched the workspace and only found `skills/snapeval`, `plugin/skills/snapeval`, and `test-skills/greeter`.\n\nI also attempted to run `npx snapeval check skills/release-notes --threshold 0.85`, but command execution is blocked by environment permissions here.\n\nIf you want, I can continue as soon as you provide the correct skill path or run this locally:\n\n`npx snapeval check <correct-skill-path> --threshold 0.85`\n\nThen I can help interpret passed tiers, regressions, cost, and approval options.",
+    "metadata": {
+      "tokens": 0,
+      "durationMs": 104671,
+      "model": "copilot",
+      "adapter": "copilot-cli"
+    }
+  },
+  "captured_at": "2026-03-14T22:57:08.150Z",
+  "runs": 1,
+  "approved_by": null
+}

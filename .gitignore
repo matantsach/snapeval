@@ -1,10 +1,11 @@
 node_modules/
 dist/
 .DS_Store
-*.snap.json
-.audit-log.jsonl
-evals/snapshots/
+# Ignore eval artifacts by default (users commit their own baselines)
 evals/results/
+
+# But track our own plugin's evals
+!skills/snapeval/evals/
 .playwright-mcp/
 .heartbeat/
 firebase-debug.log

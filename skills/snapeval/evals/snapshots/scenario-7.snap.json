@@ -1,0 +1,16 @@
+{
+  "scenario_id": 7,
+  "prompt": "Check `skills/does-not-exist`.",
+  "output": {
+    "raw": "I checked the repository first: `skills/does-not-exist` isn’t present, so I’m confirming the CLI behavior before I report back.\n\nThe path is missing, and `npx` also couldn’t elevate for an install prompt, so I’m switching to the local project binary to verify the exact failure mode cleanly.\n\nI found the `check` path validation in the source: it expects `evals/evals.json`, not `SKILL.md`, so for a nonexistent directory the user-facing error should mention missing evals. I’m running the local CLI entrypoint directly to confirm the exact output.\n\n`skills/does-not-exist` isn’t in this repo, so the check can’t actually run.\n\nFrom the CLI source, `snapeval check` fails immediately by looking for:\n`skills/does-not-exist/evals/evals.json`\n\nSo the effective result is:\n\n`Error: No evals.json found at /Users/matantsach/mtsach/projects/evaluator/skills/does-not-exist/evals/evals.json`\n\nThere are no scenario results, regressions, cost, or duration to report because execution never gets past input validation.\n\nIf you meant the built-in skill here, the valid path is `skills/snapeval`.",
+    "metadata": {
+      "tokens": 0,
+      "durationMs": 97576,
+      "model": "copilot",
+      "adapter": "copilot-cli"
+    }
+  },
+  "captured_at": "2026-03-14T23:04:28.770Z",
+  "runs": 1,
+  "approved_by": null
+}

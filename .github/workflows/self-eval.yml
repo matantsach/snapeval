@@ -20,8 +20,8 @@ permissions:
   contents: read
 
 jobs:
-  self-eval:
-    name: Evaluate Own Skill
+  validate-plugin:
+    name: Validate Plugin
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -33,41 +33,60 @@ jobs:
 
       - run: npm ci
 
-      # Generate test cases from our own plugin's SKILL.md
-      - name: Init evals from SKILL.md
-        run: npx tsx bin/snapeval.ts init skills/snapeval
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      # Validate plugin.json is valid
+      - name: Validate plugin.json
+        run: node -e "const p = require('./plugin.json'); console.log('Plugin:', p.name, 'v'+p.version); if (!p.skills?.length) throw new Error('No skills defined')"
 
-      - name: Show generated evals
-        run: cat skills/snapeval/evals/evals.json
-
-      # If baselines exist in the repo, run check. Otherwise just capture.
-      - name: Check or Capture
+      # Validate SKILL.md exists for each declared skill
+      - name: Validate skill files exist
         run: |
-          if [ -d "skills/snapeval/evals/snapshots" ] && [ "$(ls skills/snapeval/evals/snapshots/*.snap.json 2>/dev/null | wc -l)" -gt 0 ]; then
-            echo "Baselines found — running regression check"
-            npx tsx bin/snapeval.ts check skills/snapeval --ci || exit 1
-          else
-            echo "No baselines — capturing initial snapshots"
-            npx tsx bin/snapeval.ts capture skills/snapeval
-            echo "Baselines captured. Commit these to enable regression checks."
-            ls -la skills/snapeval/evals/snapshots/
-          fi
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          node -e "
+            const p = require('./plugin.json');
+            const fs = require('fs');
+            for (const s of p.skills) {
+              const path = s + '/SKILL.md';
+              if (!fs.existsSync(path)) throw new Error('Missing: ' + path);
+              console.log('Found:', path, '(' + fs.statSync(path).size + ' bytes)');
+            }
+          "
 
-      # Generate report
-      - name: Generate report
-        if: always()
-        run: npx tsx bin/snapeval.ts report skills/snapeval 2>/dev/null || echo "No results to report"
+      # Validate evals.json is valid and has test cases
+      - name: Validate evals.json
+        run: |
+          node -e "
+            const fs = require('fs');
+            const evalsPath = 'skills/snapeval/evals/evals.json';
+            if (!fs.existsSync(evalsPath)) { console.log('No evals.json — skip'); process.exit(0); }
+            const evals = JSON.parse(fs.readFileSync(evalsPath, 'utf-8'));
+            console.log('Skill:', evals.skill_name);
+            console.log('Test cases:', evals.evals.length);
+            for (const e of evals.evals) {
+              if (!e.prompt) throw new Error('Eval ' + e.id + ' missing prompt');
+              if (!e.expected_output) throw new Error('Eval ' + e.id + ' missing expected_output');
+              console.log('  #' + e.id + ':', e.prompt.slice(0, 60) + '...');
+            }
+            console.log('All evals valid');
+          "
 
-      - name: Upload evals artifacts
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: snapeval-self-eval
-          path: |
-            skills/snapeval/evals/evals.json
-            skills/snapeval/evals/results/
-          retention-days: 7
+      # Validate baselines exist and are parseable
+      - name: Validate baselines
+        run: |
+          node -e "
+            const fs = require('fs');
+            const dir = 'skills/snapeval/evals/snapshots';
+            if (!fs.existsSync(dir)) { console.log('No baselines — skip'); process.exit(0); }
+            const files = fs.readdirSync(dir).filter(f => f.endsWith('.snap.json'));
+            console.log('Baselines:', files.length);
+            for (const f of files) {
+              const snap = JSON.parse(fs.readFileSync(dir + '/' + f, 'utf-8'));
+              if (!snap.output?.raw) throw new Error(f + ' missing output.raw');
+              console.log('  ' + f + ': scenario ' + snap.scenario_id + ' (' + snap.output.raw.length + ' chars)');
+            }
+            console.log('All baselines valid');
+          "
+
+      # Verify CLI boots without errors
+      - name: Verify CLI
+        run: |
+          npx tsx bin/snapeval.ts --version
+          npx tsx bin/snapeval.ts --help

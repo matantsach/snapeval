@@ -1,0 +1,16 @@
+{
+  "scenario_id": 1,
+  "prompt": "Evaluate my `skills/code-reviewer` skill.",
+  "output": {
+    "raw": "I hit a path mismatch and a permissions snag creating the session plan, so I’m tightening up the repo inspection first and then I’ll run the evaluation end-to-end with reasonable defaults.\n\nThe repo doesn’t actually contain `skills/code-reviewer`, so I’m checking whether this is an expected sample path or whether there’s a real equivalent skill elsewhere before I decide how to proceed.\n\nI confirmed `skills/code-reviewer` is only referenced in docs/tests, not present as a real skill. I’m checking the CLI’s actual error behavior now so I can give you a concrete evaluation outcome instead of guessing.\n\n`npx` itself appears blocked in this environment, so I’m trying a direct local invocation path next to verify the same failure mode without relying on that wrapper.\n\nI’ve got the root cause now: this repo doesn’t contain a real `skills/code-reviewer` skill, and the local runtime here also won’t launch `snapeval`, so I’m wrapping up with the concrete blocker and the exact next step to unblock evaluation.\n\nI couldn’t complete a real evaluation of `skills/code-reviewer` because that skill isn’t present in this repo. The only matching references are docs/tests; there’s no actual `skills/code-reviewer/SKILL.md` to read.\n\nAlso, this environment is blocking `snapeval` execution, so I couldn’t run `init`/`capture` here. Based on `src/commands/init.ts:22-25`, the CLI would fail with: `No SKILL.md found at <path>`.\n\nNext step: point me at the real skill directory, or add `skills/code-reviewer/SKILL.md`. Then run:\n\n`npx snapeval init <skill-path>`\n`npx snapeval capture <skill-path>`",
+    "metadata": {
+      "tokens": 0,
+      "durationMs": 87541,
+      "model": "copilot",
+      "adapter": "copilot-cli"
+    }
+  },
+  "captured_at": "2026-03-14T22:50:33.343Z",
+  "runs": 1,
+  "approved_by": null
+}
