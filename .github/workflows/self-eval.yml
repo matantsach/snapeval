@@ -1,0 +1,73 @@
+name: Self Eval
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'skills/**'
+      - 'plugin.json'
+      - 'src/**'
+      - 'bin/**'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'skills/**'
+      - 'plugin.json'
+      - 'src/**'
+      - 'bin/**'
+
+permissions:
+  contents: read
+
+jobs:
+  self-eval:
+    name: Evaluate Own Skill
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      # Generate test cases from our own plugin's SKILL.md
+      - name: Init evals from SKILL.md
+        run: npx tsx bin/snapeval.ts init skills/snapeval
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Show generated evals
+        run: cat skills/snapeval/evals/evals.json
+
+      # If baselines exist in the repo, run check. Otherwise just capture.
+      - name: Check or Capture
+        run: |
+          if [ -d "skills/snapeval/evals/snapshots" ] && [ "$(ls skills/snapeval/evals/snapshots/*.snap.json 2>/dev/null | wc -l)" -gt 0 ]; then
+            echo "Baselines found — running regression check"
+            npx tsx bin/snapeval.ts check skills/snapeval --ci || exit 1
+          else
+            echo "No baselines — capturing initial snapshots"
+            npx tsx bin/snapeval.ts capture skills/snapeval
+            echo "Baselines captured. Commit these to enable regression checks."
+            ls -la skills/snapeval/evals/snapshots/
+          fi
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # Generate report
+      - name: Generate report
+        if: always()
+        run: npx tsx bin/snapeval.ts report skills/snapeval 2>/dev/null || echo "No results to report"
+
+      - name: Upload evals artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: snapeval-self-eval
+          path: |
+            skills/snapeval/evals/evals.json
+            skills/snapeval/evals/results/
+          retention-days: 7

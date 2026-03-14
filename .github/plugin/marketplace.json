@@ -1,0 +1,19 @@
+{
+  "name": "snapeval-marketplace",
+  "owner": {
+    "name": "Matan Tsach",
+    "email": "matantsach@users.noreply.github.com"
+  },
+  "metadata": {
+    "description": "Plugin marketplace for snapeval — semantic snapshot testing for AI skills",
+    "version": "1.0.0"
+  },
+  "plugins": [
+    {
+      "name": "snapeval",
+      "description": "Semantic snapshot testing for AI skills. Zero assertions. AI-driven. Free inference.",
+      "version": "0.1.0",
+      "source": "./"
+    }
+  ]
+}

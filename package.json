@@ -1,6 +1,7 @@
 {
   "name": "snapeval",
   "version": "0.1.0",
+  "description": "Semantic snapshot testing for AI skills. Zero assertions. AI-driven. Free inference.",
   "type": "module",
   "bin": {
     "snapeval": "./bin/snapeval.ts"
@@ -9,8 +10,35 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "build": "tsc",
-    "dev": "tsx bin/snapeval.ts"
+    "dev": "tsx bin/snapeval.ts",
+    "prepublishOnly": "npm run build && npm test"
   },
+  "keywords": [
+    "ai-skills",
+    "snapshot-testing",
+    "copilot-cli",
+    "agentskills",
+    "evaluation",
+    "semantic-testing"
+  ],
+  "author": "Matan Tsach",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/matantsach/snapeval.git"
+  },
+  "homepage": "https://github.com/matantsach/snapeval",
+  "bugs": {
+    "url": "https://github.com/matantsach/snapeval/issues"
+  },
+  "files": [
+    "dist/",
+    "bin/",
+    "src/",
+    "plugin.json",
+    "skills/",
+    "scripts/"
+  ],
   "dependencies": {
     "chalk": "^5.4.1",
     "commander": "^13.1.0"
