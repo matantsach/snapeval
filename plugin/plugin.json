@@ -1,0 +1,7 @@
+{
+  "name": "snapeval",
+  "version": "0.1.0",
+  "description": "Semantic snapshot testing for AI skills",
+  "skills": ["skills/snapeval"],
+  "scripts": ["scripts/snapeval-cli.sh"]
+}
