@@ -1,3 +1,12 @@
 node_modules/
 dist/
 .DS_Store
+*.snap.json
+.audit-log.jsonl
+evals/snapshots/
+evals/results/
+.playwright-mcp/
+.heartbeat/
+firebase-debug.log
+snapeval-design-full.png
+/test-skills/*/evals/
