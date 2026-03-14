@@ -32,11 +32,12 @@
     "url": "https://github.com/matantsach/snapeval/issues"
   },
   "files": [
-    "dist/",
+    "dist/src/",
+    "dist/bin/",
     "bin/",
     "src/",
     "plugin.json",
-    "skills/",
+    "skills/snapeval/SKILL.md",
     "scripts/"
   ],
   "dependencies": {
