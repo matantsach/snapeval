@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.0.1](https://github.com/matantsach/snapeval/compare/v1.0.0...v1.0.1) (2026-03-14)
+
+
+### Bug Fixes
+
+* clean npm package — exclude tests, snapshots, scrub local paths ([c86fc1a](https://github.com/matantsach/snapeval/commit/c86fc1aa2a99a3817c7a04e454376e2912befebb))
+
 ## 1.0.0 (2026-03-14)
 
 
