@@ -9,6 +9,7 @@
   "scripts": {
     "test": "vitest run",
     "test:watch": "vitest",
+    "test:e2e": "vitest run --config vitest.e2e.config.ts",
     "build": "tsc",
     "dev": "tsx bin/snapeval.ts",
     "prepublishOnly": "npm run build && npm test"
