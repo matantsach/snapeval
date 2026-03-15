@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.1.0](https://github.com/matantsach/snapeval/compare/v1.0.1...v1.1.0) (2026-03-15)
+
+
+### Features
+
+* HTML eval viewer with diff highlighting and benchmark dashboard ([35478a0](https://github.com/matantsach/snapeval/commit/35478a0e1f4d13757eeb841d153e2defc1c19798))
+* remove embedding tier, simplify to schema + LLM judge ([95ef36b](https://github.com/matantsach/snapeval/commit/95ef36b598af0287eb41b6c7729eb223a6f6f673))
+
 ## [1.0.1](https://github.com/matantsach/snapeval/compare/v1.0.0...v1.0.1) (2026-03-14)
 
 
