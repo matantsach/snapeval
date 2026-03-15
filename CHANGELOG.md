@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.0](https://github.com/matantsach/snapeval/compare/v1.1.0...v1.2.0) (2026-03-15)
+
+
+### Features
+
+* add interactive scenario ideation with browser-based viewer ([#15](https://github.com/matantsach/snapeval/issues/15)) ([2537f52](https://github.com/matantsach/snapeval/commit/2537f52d8534cfa43e5cbedd40b58bb5a9493c5e))
+
 ## [1.1.0](https://github.com/matantsach/snapeval/compare/v1.0.1...v1.1.0) (2026-03-15)
 
 
