@@ -64,6 +64,7 @@ function loadPreviousIteration(
 
 function buildHtml(viewerData: ViewerData): string {
   const dataJson = JSON.stringify(viewerData);
+  const safeJson = dataJson.replace(/<\/script>/gi, '<\\/script>');
 
   return `<!DOCTYPE html>
 <html lang="en">
@@ -196,6 +197,7 @@ function buildHtml(viewerData: ViewerData): string {
         <button class="nav-btn" id="btn-prev" disabled>&#8592; Prev</button>
         <span class="nav-counter" id="nav-counter"></span>
         <button class="nav-btn" id="btn-next">Next &#8594;</button>
+        <button class="nav-btn" onclick="exportFeedback()">Export Feedback</button>
       </div>
       <div id="scenario-view"></div>
     </div>
@@ -217,7 +219,7 @@ function buildHtml(viewerData: ViewerData): string {
   </div>
 
   <script>
-    const DATA = ${dataJson};
+    const DATA = ${safeJson};
 
     // ── Utilities ──────────────────────────────────────────────────────────────
     function esc(s) {
