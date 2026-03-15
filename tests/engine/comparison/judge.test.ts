@@ -127,4 +127,24 @@ describe('llmJudge', () => {
       reverseContent.indexOf('BASELINE_CONTENT')
     );
   });
+
+  it('returns reasoning with raw LLM responses', async () => {
+    const consistent = JSON.stringify({ verdict: 'consistent' });
+    const adapter = makeMockAdapter([consistent, consistent]);
+    const result = await llmJudge('baseline text', 'current text', adapter);
+    expect(result.reasoning).toBeDefined();
+    expect(result.reasoning!.forward).toBe(consistent);
+    expect(result.reasoning!.reverse).toBe(consistent);
+  });
+
+  it('returns reasoning even on inconclusive verdict', async () => {
+    const consistent = JSON.stringify({ verdict: 'consistent' });
+    const different = JSON.stringify({ verdict: 'different' });
+    const adapter = makeMockAdapter([consistent, different]);
+    const result = await llmJudge('baseline', 'current', adapter);
+    expect(result.verdict).toBe('inconclusive');
+    expect(result.reasoning).toBeDefined();
+    expect(result.reasoning!.forward).toBe(consistent);
+    expect(result.reasoning!.reverse).toBe(different);
+  });
 });

@@ -91,6 +91,7 @@ export interface ComparisonResult {
   tier: 1 | 2 | 3;
   similarity?: number;
   details: string;
+  judgeReasoning?: { forward: string; reverse: string };
 }
 
 // === Grading ===

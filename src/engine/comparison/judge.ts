@@ -19,6 +19,7 @@ Respond with JSON only: {"verdict": "consistent"} or {"verdict": "different"}`;
 interface JudgeResult {
   verdict: ComparisonVerdict;
   details: string;
+  reasoning?: { forward: string; reverse: string };
 }
 
 function parseJudgeResponse(response: string): 'consistent' | 'different' | null {
@@ -35,7 +36,7 @@ async function runJudgePair(
   baseline: string,
   current: string,
   inference: InferenceAdapter
-): Promise<{ forward: string | null; reverse: string | null }> {
+): Promise<{ forward: string | null; reverse: string | null; rawForward: string; rawReverse: string }> {
   const [forwardResp, reverseResp] = await Promise.all([
     inference.chat([{ role: 'user', content: buildJudgePrompt(baseline, current) }], {
       temperature: 0,
@@ -46,7 +47,12 @@ async function runJudgePair(
       responseFormat: 'json',
     }),
   ]);
-  return { forward: parseJudgeResponse(forwardResp), reverse: parseJudgeResponse(reverseResp) };
+  return {
+    forward: parseJudgeResponse(forwardResp),
+    reverse: parseJudgeResponse(reverseResp),
+    rawForward: forwardResp,
+    rawReverse: reverseResp,
+  };
 }
 
 export async function llmJudge(
@@ -55,24 +61,28 @@ export async function llmJudge(
   inference: InferenceAdapter
 ): Promise<JudgeResult> {
   for (let attempt = 0; attempt < 2; attempt++) {
-    const { forward, reverse } = await runJudgePair(baseline, current, inference);
+    const { forward, reverse, rawForward, rawReverse } = await runJudgePair(baseline, current, inference);
+    const reasoning = { forward: rawForward, reverse: rawReverse };
     if (forward === null || reverse === null) {
       if (attempt === 0) continue;
       return {
         verdict: 'inconclusive',
         details: 'LLM judge returned unparseable response after retry',
+        reasoning,
       };
     }
     if (forward === reverse) {
       return {
         verdict: forward === 'consistent' ? 'pass' : 'regressed',
         details: `LLM Judge: both orderings agree — ${forward}`,
+        reasoning,
       };
     }
     return {
       verdict: 'inconclusive',
       details: `LLM Judge: orderings disagree (forward=${forward}, reverse=${reverse})`,
+      reasoning,
     };
   }
-  return { verdict: 'inconclusive', details: 'LLM judge exhausted retries' };
+  return { verdict: 'inconclusive', details: 'LLM judge exhausted retries', reasoning: undefined };
 }

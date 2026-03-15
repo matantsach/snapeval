@@ -39,5 +39,11 @@ export async function comparePipeline(
 
   // Tier 3: LLM Judge (EXPENSIVE)
   const judgeResult = await llmJudge(baseline, current, inference);
-  return { scenarioId: 0, verdict: judgeResult.verdict, tier: 3, details: judgeResult.details };
+  return {
+    scenarioId: 0,
+    verdict: judgeResult.verdict,
+    tier: 3,
+    details: judgeResult.details,
+    judgeReasoning: judgeResult.reasoning,
+  };
 }

@@ -137,6 +137,33 @@ describe('comparePipeline', () => {
       expect(result.tier).toBe(3);
       expect(result.verdict).toBe('inconclusive');
     });
+
+    it('includes judgeReasoning in Tier 3 results', async () => {
+      const consistent = JSON.stringify({ verdict: 'consistent' });
+      let callCount = 0;
+      const adapter = makeMockAdapter({
+        embedFn: () => (callCount++ === 0 ? [1, 0] : [0, 1]),
+        chatResponses: [consistent, consistent],
+      });
+
+      const result = await comparePipeline(DIFF_SCHEMA_A, DIFF_SCHEMA_B, adapter, {
+        threshold: 0.85,
+      });
+
+      expect(result.tier).toBe(3);
+      expect(result.judgeReasoning).toBeDefined();
+      expect(result.judgeReasoning!.forward).toBe(consistent);
+    });
+
+    it('does not include judgeReasoning in Tier 1 results', async () => {
+      const adapter = makeMockAdapter({});
+      const result = await comparePipeline(SAME_SCHEMA_A, SAME_SCHEMA_B, adapter, {
+        threshold: 0.85,
+      });
+
+      expect(result.tier).toBe(1);
+      expect(result.judgeReasoning).toBeUndefined();
+    });
   });
 
   describe('skipEmbedding option', () => {
