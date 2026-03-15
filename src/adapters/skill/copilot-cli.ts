@@ -9,7 +9,9 @@ export class CopilotCLIAdapter implements SkillAdapter {
   async invoke(skillPath: string, prompt: string, _files?: string[]): Promise<SkillOutput> {
     const startMs = Date.now();
 
-    // Try to include SKILL.md content as context if present
+    await this.ensureInstalled();
+
+    // Include SKILL.md content as context when invoked directly (not via plugin)
     let skillMd = '';
     try {
       const skillFile = path.join(skillPath, 'SKILL.md');
@@ -21,11 +23,9 @@ export class CopilotCLIAdapter implements SkillAdapter {
     const finalPrompt = skillMd ? `${skillMd}\n\n${prompt}` : prompt;
 
     return new Promise<SkillOutput>((resolve, reject) => {
-      // Use gh copilot and pass flags after `--` so gh doesn't consume them.
-      // Use --silent to limit output to the model's response only.
       execFile(
-        'gh',
-        ['copilot', '--', '-p', finalPrompt, '--silent'],
+        'copilot',
+        ['-p', finalPrompt, '-s', '--no-ask-user', '--allow-all-tools', '--model', 'gpt-4.1'],
         { encoding: 'utf-8', maxBuffer: 10 * 1024 * 1024 },
         (error, stdout, _stderr) => {
           if (error) {
@@ -50,11 +50,25 @@ export class CopilotCLIAdapter implements SkillAdapter {
 
   async isAvailable(): Promise<boolean> {
     try {
-      // Use gh copilot --help as a lightweight availability check
-      execFileSync('gh', ['copilot', '--help'], { encoding: 'utf-8', stdio: 'pipe' });
+      execFileSync('copilot', ['--version'], { encoding: 'utf-8', stdio: 'pipe' });
       return true;
     } catch {
       return false;
+    }
+  }
+
+  private async ensureInstalled(): Promise<void> {
+    if (await this.isAvailable()) return;
+
+    try {
+      execFileSync('npm', ['install', '-g', '@github/copilot'], {
+        encoding: 'utf-8',
+        stdio: 'pipe',
+      });
+    } catch (err) {
+      throw new Error(
+        `Failed to install @github/copilot. Install manually: npm install -g @github/copilot\n${err}`
+      );
     }
   }
 }

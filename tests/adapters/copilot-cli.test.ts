@@ -20,7 +20,8 @@ describe('CopilotCLIAdapter', () => {
   });
 
   describe('invoke()', () => {
-    it('calls execFile with gh copilot -- -p prompt --silent', async () => {
+    it('calls execFile with copilot -p prompt -s --no-ask-user --allow-all-tools --model gpt-4.1', async () => {
+      mockExecFileSync.mockReturnValue('copilot 1.0.0');
       mockExecFile.mockImplementation((_cmd, _args, _opts, callback) => {
         callback(null, 'skill output\n', '');
       });
@@ -30,14 +31,17 @@ describe('CopilotCLIAdapter', () => {
 
       expect(mockExecFile).toHaveBeenCalledOnce();
       const [cmd, args] = mockExecFile.mock.calls[0] as [string, string[]];
-      expect(cmd).toBe('gh');
-      expect(args).toContain('copilot');
-      expect(args).toContain('--');
+      expect(cmd).toBe('copilot');
       expect(args).toContain('-p');
-      expect(args).toContain('--silent');
+      expect(args).toContain('-s');
+      expect(args).toContain('--no-ask-user');
+      expect(args).toContain('--allow-all-tools');
+      expect(args).toContain('--model');
+      expect(args).toContain('gpt-4.1');
     });
 
     it('returns trimmed stdout as raw output', async () => {
+      mockExecFileSync.mockReturnValue('copilot 1.0.0');
       mockExecFile.mockImplementation((_cmd, _args, _opts, callback) => {
         callback(null, '  trimmed output  \n', '');
       });
@@ -48,6 +52,7 @@ describe('CopilotCLIAdapter', () => {
     });
 
     it('records durationMs in metadata', async () => {
+      mockExecFileSync.mockReturnValue('copilot 1.0.0');
       mockExecFile.mockImplementation((_cmd, _args, _opts, callback) => {
         callback(null, 'output', '');
       });
@@ -59,6 +64,7 @@ describe('CopilotCLIAdapter', () => {
     });
 
     it('sets adapter to "copilot-cli" in metadata', async () => {
+      mockExecFileSync.mockReturnValue('copilot 1.0.0');
       mockExecFile.mockImplementation((_cmd, _args, _opts, callback) => {
         callback(null, 'output', '');
       });
@@ -69,6 +75,7 @@ describe('CopilotCLIAdapter', () => {
     });
 
     it('sets model to "copilot" in metadata', async () => {
+      mockExecFileSync.mockReturnValue('copilot 1.0.0');
       mockExecFile.mockImplementation((_cmd, _args, _opts, callback) => {
         callback(null, 'output', '');
       });
@@ -79,6 +86,7 @@ describe('CopilotCLIAdapter', () => {
     });
 
     it('rejects on execFile error', async () => {
+      mockExecFileSync.mockReturnValue('copilot 1.0.0');
       mockExecFile.mockImplementation((_cmd, _args, _opts, callback) => {
         callback(new Error('command failed'), '', 'error output');
       });
@@ -90,7 +98,7 @@ describe('CopilotCLIAdapter', () => {
 
   describe('isAvailable()', () => {
     it('returns true when execFileSync succeeds', async () => {
-      mockExecFileSync.mockReturnValue('gh-copilot 1.0.0');
+      mockExecFileSync.mockReturnValue('copilot 1.0.0');
       const adapter = new CopilotCLIAdapter();
       const available = await adapter.isAvailable();
       expect(available).toBe(true);
@@ -103,11 +111,11 @@ describe('CopilotCLIAdapter', () => {
       expect(available).toBe(false);
     });
 
-    it('calls gh copilot --help to check availability', async () => {
-      mockExecFileSync.mockReturnValue('help output');
+    it('calls copilot --version to check availability', async () => {
+      mockExecFileSync.mockReturnValue('copilot 1.0.0');
       const adapter = new CopilotCLIAdapter();
       await adapter.isAvailable();
-      expect(mockExecFileSync).toHaveBeenCalledWith('gh', ['copilot', '--help'], expect.any(Object));
+      expect(mockExecFileSync).toHaveBeenCalledWith('copilot', ['--version'], expect.any(Object));
     });
   });
 

@@ -19,11 +19,11 @@ describe('CopilotInference', () => {
   });
 
   describe('chat()', () => {
-    it('calls execFileSync with gh copilot -p and the prompt', async () => {
+    it('calls execFileSync with copilot -p prompt -s --no-ask-user --model gpt-4.1', async () => {
       mockExecFileSync.mockReturnValue('some output\n');
       const adapter = new CopilotInference();
       const result = await adapter.chat([{ role: 'user', content: 'hello' }]);
-      expect(mockExecFileSync).toHaveBeenCalledWith('gh', ['copilot', '-p', 'hello'], { encoding: 'utf-8' });
+      expect(mockExecFileSync).toHaveBeenCalledWith('copilot', ['-p', 'hello', '-s', '--no-ask-user', '--model', 'gpt-4.1'], { encoding: 'utf-8' });
       expect(result).toBe('some output');
     });
 
@@ -42,7 +42,7 @@ describe('CopilotInference', () => {
         { role: 'user', content: 'What is 2+2?' },
       ]);
       const [, args] = mockExecFileSync.mock.calls[0] as [string, string[]];
-      const prompt = args[2];
+      const prompt = args[1]; // -p is at index 0, prompt at index 1
       expect(prompt).toContain('You are helpful.');
       expect(prompt).toContain('What is 2+2?');
     });
