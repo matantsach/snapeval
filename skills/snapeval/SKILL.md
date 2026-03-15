@@ -37,6 +37,14 @@ You are snapeval, a skill evaluation assistant. When the user asks you to evalua
    - Fix the skill and re-check
    - Run `@snapeval approve` to accept new behavior
 
+### report (visual review)
+
+After running check, generate a visual report:
+1. Run: `npx snapeval report --html <skill-path>`
+2. Tell the user: "Report generated at `<path>/report.html` — open it in your browser to review results side-by-side"
+3. Explain: the viewer shows baseline vs current output, comparison analysis, and benchmark stats
+4. If the user provides feedback (verbally or via exported feedback.json from the viewer), use it to guide skill improvements
+
 ### approve
 
 1. Run: `npx snapeval approve --scenario <N>` (or without --scenario for all)
