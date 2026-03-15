@@ -52,7 +52,7 @@ export class TerminalReporter implements ReportAdapter {
     );
     console.log(
       chalk.dim(
-        `Tier breakdown — schema: ${summary.tier_breakdown.tier1_schema}, embedding: ${summary.tier_breakdown.tier2_embedding}, llm: ${summary.tier_breakdown.tier3_llm_judge}`
+        `Tier breakdown — schema: ${summary.tier_breakdown.tier1_schema}, llm judge: ${summary.tier_breakdown.tier2_llm_judge}`
       )
     );
   }

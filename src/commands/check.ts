@@ -17,7 +17,7 @@ export async function checkCommand(
   skillPath: string,
   skillAdapter: SkillAdapter,
   inference: InferenceAdapter,
-  options: { threshold: number; budget: string; skipEmbedding?: boolean }
+  options: { budget: string }
 ): Promise<EvalResults> {
   const evalsPath = path.join(skillPath, 'evals', 'evals.json');
   if (!fs.existsSync(evalsPath)) {
@@ -33,7 +33,7 @@ export async function checkCommand(
   }
 
   const scenarios: ScenarioResult[] = [];
-  const tierBreakdown = { tier1_schema: 0, tier2_embedding: 0, tier3_llm_judge: 0 };
+  const tierBreakdown = { tier1_schema: 0, tier2_llm_judge: 0 };
 
   for (const evalCase of evalsFile.evals) {
     const baseline = manager.loadSnapshot(evalCase.id);
@@ -43,12 +43,10 @@ export async function checkCommand(
       baseline.output.raw,
       newOutput.raw,
       inference,
-      { threshold: options.threshold, skipEmbedding: options.skipEmbedding }
     );
     comparison.scenarioId = evalCase.id;
     if (comparison.tier === 1) tierBreakdown.tier1_schema++;
-    else if (comparison.tier === 2) tierBreakdown.tier2_embedding++;
-    else tierBreakdown.tier3_llm_judge++;
+    else tierBreakdown.tier2_llm_judge++;
     budget.addCost(inference.estimateCost(newOutput.metadata.tokens));
     scenarios.push({
       scenarioId: evalCase.id,

@@ -15,7 +15,7 @@ function makeOutput(raw: string): SkillOutput {
 function makeScenario(
   id: number,
   verdict: 'pass' | 'regressed' | 'inconclusive',
-  tier: 1 | 2 | 3 = 1
+  tier: 1 | 2 = 1
 ): ScenarioResult {
   return {
     scenarioId: id,
@@ -25,8 +25,7 @@ function makeScenario(
       verdict,
       tier,
       details: `verdict: ${verdict}`,
-      ...(tier === 3 ? { judgeReasoning: { forward: '{"verdict":"consistent"}', reverse: '{"verdict":"consistent"}' } } : {}),
-      ...(tier === 2 ? { similarity: 0.92 } : {}),
+      ...(tier === 2 ? { judgeReasoning: { forward: '{"verdict":"consistent"}', reverse: '{"verdict":"consistent"}' } } : {}),
     },
     timing: { total_tokens: 50, duration_ms: 200 },
     newOutput: makeOutput(`current output ${id}`),
@@ -48,7 +47,7 @@ function makeResults(scenarios: ScenarioResult[]): EvalResults {
       total_tokens: 150,
       total_cost_usd: 0,
       total_duration_ms: 600,
-      tier_breakdown: { tier1_schema: 1, tier2_embedding: 1, tier3_llm_judge: 1 },
+      tier_breakdown: { tier1_schema: 1, tier2_llm_judge: 1 },
     },
     timing: { total_tokens: 150, duration_ms: 600 },
   };
@@ -101,7 +100,7 @@ describe('HTMLReporter', () => {
 
   it('viewer-data.json has correct structure', async () => {
     const reporter = new HTMLReporter(tmpDir, 1);
-    await reporter.report(makeResults([makeScenario(1, 'pass', 2), makeScenario(2, 'regressed', 3)]));
+    await reporter.report(makeResults([makeScenario(1, 'pass', 1), makeScenario(2, 'regressed', 2)]));
     const data = JSON.parse(fs.readFileSync(path.join(tmpDir, 'viewer-data.json'), 'utf-8'));
     expect(data.skillName).toBe('test-skill');
     expect(data.iteration).toBe(1);
@@ -109,8 +108,7 @@ describe('HTMLReporter', () => {
     expect(data.scenarios[0].baselineOutput).toBe('baseline output 1');
     expect(data.scenarios[0].currentOutput).toBe('current output 1');
     expect(data.scenarios[0].verdict).toBe('pass');
-    expect(data.scenarios[0].tier).toBe(2);
-    expect(data.scenarios[0].similarity).toBe(0.92);
+    expect(data.scenarios[0].tier).toBe(1);
     expect(data.scenarios[1].judgeReasoning).toBeDefined();
   });
 
@@ -140,7 +138,7 @@ describe('HTMLReporter', () => {
       generatedAt: '2026-03-14T00:00:00Z',
       iteration: 1,
       scenarios: [{ scenarioId: 1, prompt: 'p', baselineOutput: 'old baseline', currentOutput: 'old current', verdict: 'pass', tier: 1, details: '', timing: { total_tokens: 0, duration_ms: 0 } }],
-      summary: { total_scenarios: 1, passed: 1, regressed: 0, pass_rate: 1, total_tokens: 0, total_cost_usd: 0, total_duration_ms: 0, tier_breakdown: { tier1_schema: 1, tier2_embedding: 0, tier3_llm_judge: 0 } },
+      summary: { total_scenarios: 1, passed: 1, regressed: 0, pass_rate: 1, total_tokens: 0, total_cost_usd: 0, total_duration_ms: 0, tier_breakdown: { tier1_schema: 1, tier2_llm_judge: 0 } },
     };
     fs.writeFileSync(path.join(prevDir, 'viewer-data.json'), JSON.stringify(prevData), 'utf-8');
 
@@ -148,7 +146,7 @@ describe('HTMLReporter', () => {
     const iter2Dir = path.join(tmpDir, '..', 'iteration-2');
     fs.mkdirSync(iter2Dir, { recursive: true });
     const reporter = new HTMLReporter(iter2Dir, 2);
-    await reporter.report(makeResults([makeScenario(1, 'regressed', 3)]));
+    await reporter.report(makeResults([makeScenario(1, 'regressed', 2)]));
 
     const data = JSON.parse(fs.readFileSync(path.join(iter2Dir, 'viewer-data.json'), 'utf-8'));
     expect(data.previousIteration).toBeDefined();

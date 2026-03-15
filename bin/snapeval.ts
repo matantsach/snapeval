@@ -80,10 +80,8 @@ program
   .description('Compare current skill output against baselines')
   .option('--adapter <adapter>', 'Skill adapter to use', 'copilot-cli')
   .option('--inference <inference>', 'Inference adapter to use', 'auto')
-  .option('--threshold <n>', 'Similarity threshold (0–1)', '0.85')
   .option('--budget <amount>', 'Spend cap in USD (or "unlimited")', 'unlimited')
   .option('--ci', 'CI mode: exit 1 on regressions, no interactive prompts')
-  .option('--skip-embedding', 'Skip embedding tier (tier 2)')
   .option('--verbose', 'Verbose output')
   .option('--scenario <ids>', 'Comma-separated scenario IDs to check')
   .argument('[skill-dir]', 'Path to skill directory', process.cwd())
@@ -94,7 +92,6 @@ program
         {
           adapter: opts.adapter as string,
           inference: opts.inference as string,
-          threshold: opts.threshold ? parseFloat(opts.threshold as string) : undefined,
           budget: opts.budget as string,
         },
         process.cwd(),
@@ -104,9 +101,7 @@ program
       const inference = resolveInference(config.inference);
 
       const results = await checkCommand(skillPath, skillAdapter, inference, {
-        threshold: config.threshold,
         budget: config.budget,
-        skipEmbedding: Boolean(opts.skipEmbedding),
       });
 
       // Always print terminal report
@@ -160,9 +155,7 @@ program
   .description('Write latest check results to evals/results/iteration-N/')
   .option('--adapter <adapter>', 'Skill adapter to use', 'copilot-cli')
   .option('--inference <inference>', 'Inference adapter to use', 'auto')
-  .option('--threshold <n>', 'Similarity threshold (0–1)', '0.85')
   .option('--budget <amount>', 'Spend cap in USD (or "unlimited")', 'unlimited')
-  .option('--skip-embedding', 'Skip embedding tier (tier 2)')
   .option('--verbose', 'Verbose output')
   .option('--html', 'Generate HTML report viewer')
   .argument('[skill-dir]', 'Path to skill directory', process.cwd())
@@ -173,7 +166,6 @@ program
         {
           adapter: opts.adapter as string,
           inference: opts.inference as string,
-          threshold: opts.threshold ? parseFloat(opts.threshold as string) : undefined,
           budget: opts.budget as string,
         },
         process.cwd(),
@@ -183,9 +175,7 @@ program
       const inference = resolveInference(config.inference);
 
       const results = await checkCommand(skillPath, skillAdapter, inference, {
-        threshold: config.threshold,
         budget: config.budget,
-        skipEmbedding: Boolean(opts.skipEmbedding),
       });
 
       await reportCommand(skillPath, results, {

@@ -52,13 +52,12 @@ describe('Full workflow integration', () => {
     manager.saveSnapshot(1, 'Review this vulnerable file', baseOutput);
     manager.saveSnapshot(2, 'Review clean code', baseOutput);
 
-    // Reset mocks: skill returns same baseOutput, embed returns constant vector
+    // Reset mocks: skill returns same baseOutput
     vi.mocked(mockSkillAdapter.invoke).mockResolvedValue(baseOutput);
-    vi.mocked(mockInference.embed).mockResolvedValue([1, 0, 0]);
 
     // Check — same output → pass at Tier 1 (schema match)
     const results = await checkCommand(tmpDir, mockSkillAdapter, mockInference, {
-      threshold: 0.85, budget: 'unlimited',
+      budget: 'unlimited',
     });
     expect(results.summary.passed).toBe(2);
     expect(results.summary.regressed).toBe(0);
@@ -79,17 +78,11 @@ describe('Full workflow integration', () => {
       .mockResolvedValueOnce(changedOutput)
       .mockResolvedValueOnce(baseOutput);
 
-    // For scenario 1: baseline embed → [1,0,0], current embed → [0,1,0] (similarity=0, fails tier 2)
-    // Scenario 2 passes tier 1 (schema match), so no embed calls for it
-    vi.mocked(mockInference.embed)
-      .mockResolvedValueOnce([1, 0, 0])
-      .mockResolvedValueOnce([0, 1, 0]);
-
     // LLM judge: both forward and reverse calls return "different" → regressed
     vi.mocked(mockInference.chat).mockResolvedValue(JSON.stringify({ verdict: 'different' }));
 
     const results = await checkCommand(tmpDir, mockSkillAdapter, mockInference, {
-      threshold: 0.85, budget: 'unlimited',
+      budget: 'unlimited',
     });
     expect(results.summary.regressed).toBeGreaterThanOrEqual(1);
   });

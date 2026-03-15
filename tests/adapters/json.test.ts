@@ -75,8 +75,7 @@ function makeResults(scenarios: ScenarioResult[]): EvalResults {
       total_duration_ms: 600,
       tier_breakdown: {
         tier1_schema: 1,
-        tier2_embedding: 1,
-        tier3_llm_judge: 1,
+        tier2_llm_judge: 1,
       },
     },
     timing: {

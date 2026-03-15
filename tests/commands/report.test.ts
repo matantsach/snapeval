@@ -24,7 +24,7 @@ function makeResults(): EvalResults {
     summary: {
       total_scenarios: 1, passed: 1, regressed: 0, pass_rate: 1,
       total_tokens: 50, total_cost_usd: 0, total_duration_ms: 200,
-      tier_breakdown: { tier1_schema: 1, tier2_embedding: 0, tier3_llm_judge: 0 },
+      tier_breakdown: { tier1_schema: 1, tier2_llm_judge: 0 },
     },
     timing: { total_tokens: 50, duration_ms: 200 },
   };

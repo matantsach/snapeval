@@ -5,7 +5,6 @@ import type { SnapevalConfig } from './types.js';
 export const DEFAULT_CONFIG: SnapevalConfig = {
   adapter: 'copilot-cli',
   inference: 'auto',
-  threshold: 0.85,
   runs: 3,
   budget: 'unlimited',
 };
