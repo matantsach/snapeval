@@ -25,7 +25,7 @@ export class CopilotCLIAdapter implements SkillAdapter {
     return new Promise<SkillOutput>((resolve, reject) => {
       execFile(
         'copilot',
-        ['-p', finalPrompt, '-s', '--no-ask-user', '--allow-all-tools', '--model', 'gpt-4.1'],
+        ['-s', '--no-ask-user', '--allow-all-tools', '--model', 'gpt-4.1', '-p', finalPrompt],
         { encoding: 'utf-8', maxBuffer: 10 * 1024 * 1024 },
         (error, stdout, _stderr) => {
           if (error) {

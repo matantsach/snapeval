@@ -26,6 +26,12 @@ const PLUGIN_EVALS = {
 function isCopilotAvailable(): boolean {
   try {
     execFileSync('copilot', ['--version'], { encoding: 'utf-8', stdio: 'pipe' });
+    // Verify auth: run a trivial prompt to check if authenticated
+    execFileSync('copilot', ['-s', '--no-ask-user', '--model', 'gpt-4.1', '-p', 'hi'], {
+      encoding: 'utf-8',
+      stdio: 'pipe',
+      timeout: 30_000,
+    });
     return true;
   } catch {
     return false;

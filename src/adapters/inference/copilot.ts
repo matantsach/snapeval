@@ -9,7 +9,7 @@ export class CopilotInference implements InferenceAdapter {
 
   async chat(messages: Message[], _options?: ChatOptions): Promise<string> {
     const prompt = messages.map((m) => m.content).join('\n');
-    const result = execFileSync('copilot', ['-p', prompt, '-s', '--no-ask-user', '--model', 'gpt-4.1'], { encoding: 'utf-8' });
+    const result = execFileSync('copilot', ['-s', '--no-ask-user', '--model', 'gpt-4.1', '-p', prompt], { encoding: 'utf-8' });
     return result.trim();
   }
 
