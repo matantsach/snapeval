@@ -254,9 +254,12 @@ describe('E2E: Plugin user stories', () => {
       );
 
       // Debug: log what Copilot said and what files exist
-      console.log('[US1] Copilot stdout:', result.stdout.slice(0, 2000));
-      console.log('[US1] Exit code:', result.exitCode);
-      console.log('[US1] Skill dir contents:', listDirRecursive(skillDir));
+      const us1Debug = [
+        `[US1] Exit code: ${result.exitCode}`,
+        `[US1] Copilot stdout:\n${result.stdout.slice(0, 3000)}`,
+        `[US1] Skill dir contents: ${JSON.stringify(listDirRecursive(skillDir))}`,
+      ].join('\n');
+      process.stderr.write(us1Debug + '\n');
 
       // Primary: evals.json created with valid structure
       const evalsPath = path.join(skillDir, 'evals', 'evals.json');
@@ -404,9 +407,12 @@ describe('E2E: Plugin user stories', () => {
       );
 
       // Debug: log what Copilot said and what files exist
-      console.log('[US4] Copilot stdout:', result.stdout.slice(0, 2000));
-      console.log('[US4] Exit code:', result.exitCode);
-      console.log('[US4] Skill dir contents:', listDirRecursive(skillDir));
+      const us4Debug = [
+        `[US4] Exit code: ${result.exitCode}`,
+        `[US4] Copilot stdout:\n${result.stdout.slice(0, 3000)}`,
+        `[US4] Skill dir contents: ${JSON.stringify(listDirRecursive(skillDir))}`,
+      ].join('\n');
+      process.stderr.write(us4Debug + '\n');
 
       // Primary: snapshot content changed
       let changedCount = 0;
