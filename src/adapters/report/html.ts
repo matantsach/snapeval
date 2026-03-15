@@ -167,7 +167,7 @@ function badge(v){return'<span class="badge badge-'+esc(v)+'">'+esc(v)+'</span>'
 
 // Simple word-level diff
 function diffWords(a,b){
-  var wa=a.split(/( +|\n)/),wb=b.split(/( +|\n)/);
+  var wa=a.split(/( +|\\n)/),wb=b.split(/( +|\\n)/);
   var m=wa.length,n=wb.length;
   // LCS via hunt-szymanski for short texts, fallback to simple for long
   if(m*n>50000){return{baseline:esc(a),current:esc(b)}}
