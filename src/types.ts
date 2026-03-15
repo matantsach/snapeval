@@ -141,6 +141,7 @@ export interface ScenarioResult {
   grading?: GradingFile;
   timing: TimingData;
   newOutput: SkillOutput;
+  baselineOutput: SkillOutput;
 }
 
 // === Config ===

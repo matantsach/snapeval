@@ -29,6 +29,15 @@ function makeScenario(
         adapter: 'copilot-cli',
       },
     },
+    baselineOutput: {
+      raw: 'baseline output',
+      metadata: {
+        tokens: 100,
+        durationMs: 1500,
+        model: 'copilot',
+        adapter: 'copilot-cli',
+      },
+    },
   };
 }
 

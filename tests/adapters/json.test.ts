@@ -32,6 +32,15 @@ function makeScenario(
         adapter: 'copilot-cli',
       },
     },
+    baselineOutput: {
+      raw: 'baseline output',
+      metadata: {
+        tokens: 50,
+        durationMs: 200,
+        model: 'copilot',
+        adapter: 'copilot-cli',
+      },
+    },
     grading: assertionPassed.length > 0
       ? {
           assertion_results: assertionPassed.map((passed, i) => ({

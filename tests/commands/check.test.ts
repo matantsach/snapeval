@@ -205,6 +205,24 @@ describe('checkCommand', () => {
     expect(results.summary.total_tokens).toBe(200);
   });
 
+  it('includes baselineOutput in each scenario result', async () => {
+    writeEvals();
+    writeBaselines({ 1: 'baseline text 1', 2: 'baseline text 2' });
+
+    const results = await checkCommand(
+      tmpDir,
+      makeSkillAdapter('new output'),
+      makeInference(),
+      { threshold: 0.85, budget: 'unlimited' }
+    );
+
+    for (const scenario of results.scenarios) {
+      expect(scenario.baselineOutput).toBeDefined();
+      expect(scenario.baselineOutput.raw).toBeTruthy();
+    }
+    expect(results.scenarios[0].baselineOutput.raw).toBe('baseline text 1');
+  });
+
   it('handles single-scenario evals file', async () => {
     const singleEval: EvalsFile = {
       skill_name: 'single-skill',
