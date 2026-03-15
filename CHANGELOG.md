@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.3.1](https://github.com/matantsach/snapeval/compare/snapeval-v1.3.0...snapeval-v1.3.1) (2026-03-15)
+
+
+### Bug Fixes
+
+* move npm publish into release workflow to fix GITHUB_TOKEN limitation ([73283aa](https://github.com/matantsach/snapeval/commit/73283aa6a7f614216784b0510800abafadd6c9d8))
+
 ## [1.3.0](https://github.com/matantsach/snapeval/compare/snapeval-v1.2.0...snapeval-v1.3.0) (2026-03-15)
 
 
