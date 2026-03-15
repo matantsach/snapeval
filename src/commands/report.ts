@@ -3,12 +3,13 @@ import * as path from 'node:path';
 import type { EvalResults } from '../types.js';
 import { JSONReporter } from '../adapters/report/json.js';
 import { TerminalReporter } from '../adapters/report/terminal.js';
+import { HTMLReporter } from '../adapters/report/html.js';
 
 export async function reportCommand(
   skillPath: string,
   results: EvalResults,
-  options: { verbose?: boolean } = {}
-): Promise<void> {
+  options: { verbose?: boolean; html?: boolean } = {}
+): Promise<string> {
   // Determine next iteration number
   const resultsBaseDir = path.join(skillPath, 'evals', 'results');
   fs.mkdirSync(resultsBaseDir, { recursive: true });
@@ -28,9 +29,19 @@ export async function reportCommand(
   const jsonReporter = new JSONReporter(iterationDir);
   await jsonReporter.report(results);
 
+  // Write HTML report if requested
+  if (options.html) {
+    const htmlReporter = new HTMLReporter(iterationDir, nextIteration);
+    await htmlReporter.report(results);
+    const reportPath = path.join(iterationDir, 'report.html');
+    console.log(`Report written to ${reportPath}`);
+  }
+
   // Print terminal report
   if (options.verbose !== false) {
     const terminalReporter = new TerminalReporter();
     await terminalReporter.report(results);
   }
+
+  return iterationDir;
 }
