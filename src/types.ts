@@ -145,6 +145,33 @@ export interface ScenarioResult {
   baselineOutput: SkillOutput;
 }
 
+// === Viewer Data ===
+export interface ViewerData {
+  skillName: string;
+  generatedAt: string;
+  iteration: number;
+  scenarios: ViewerScenario[];
+  summary: BenchmarkSummary;
+  previousIteration?: {
+    summary: BenchmarkSummary;
+    scenarios: ViewerScenario[];
+  };
+}
+
+export interface ViewerScenario {
+  scenarioId: number;
+  prompt: string;
+  baselineOutput: string;
+  currentOutput: string;
+  verdict: ComparisonVerdict;
+  tier: 1 | 2 | 3;
+  similarity?: number;
+  details: string;
+  judgeReasoning?: { forward: string; reverse: string };
+  timing: TimingData;
+  feedback?: string;
+}
+
 // === Config ===
 export interface SnapevalConfig {
   adapter: string;
