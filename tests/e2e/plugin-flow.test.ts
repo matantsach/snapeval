@@ -173,6 +173,22 @@ function pluginHasReportSection(): boolean {
   }
 }
 
+/** List all files in a directory recursively (for debug logging). */
+function listDirRecursive(dir: string, prefix = ''): string[] {
+  const results: string[] = [];
+  try {
+    for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+      const rel = prefix ? `${prefix}/${entry.name}` : entry.name;
+      if (entry.isDirectory()) {
+        results.push(...listDirRecursive(path.join(dir, entry.name), rel));
+      } else {
+        results.push(rel);
+      }
+    }
+  } catch { /* dir doesn't exist */ }
+  return results;
+}
+
 const copilotAvailable = isCopilotAvailable();
 
 describe('E2E: Plugin user stories', () => {
@@ -236,6 +252,11 @@ describe('E2E: Plugin user stories', () => {
         `Evaluate the skill at ${skillDir}. Run all scenarios without asking for confirmation.`,
         { timeout: 300_000 },
       );
+
+      // Debug: log what Copilot said and what files exist
+      console.log('[US1] Copilot stdout:', result.stdout.slice(0, 2000));
+      console.log('[US1] Exit code:', result.exitCode);
+      console.log('[US1] Skill dir contents:', listDirRecursive(skillDir));
 
       // Primary: evals.json created with valid structure
       const evalsPath = path.join(skillDir, 'evals', 'evals.json');
@@ -377,10 +398,15 @@ describe('E2E: Plugin user stories', () => {
         beforeContents.set(file, fs.readFileSync(path.join(snapshotsDir, file), 'utf-8'));
       }
 
-      invokeCopilotWithPlugin(
+      const result = invokeCopilotWithPlugin(
         `Approve all scenarios for the skill at ${skillDir}.`,
         { timeout: 300_000 },
       );
+
+      // Debug: log what Copilot said and what files exist
+      console.log('[US4] Copilot stdout:', result.stdout.slice(0, 2000));
+      console.log('[US4] Exit code:', result.exitCode);
+      console.log('[US4] Skill dir contents:', listDirRecursive(skillDir));
 
       // Primary: snapshot content changed
       let changedCount = 0;
