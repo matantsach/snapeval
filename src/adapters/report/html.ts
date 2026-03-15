@@ -28,9 +28,6 @@ function buildViewerData(results: EvalResults, iteration: number): ViewerData {
       details: s.comparison.details,
       timing: s.timing,
     };
-    if (s.comparison.similarity !== undefined) {
-      scenario.similarity = s.comparison.similarity;
-    }
     if (s.comparison.judgeReasoning !== undefined) {
       scenario.judgeReasoning = s.comparison.judgeReasoning;
     }
@@ -221,7 +218,6 @@ var html='';
 sc.forEach(function(s){
   var d=s.baselineOutput===s.currentOutput?{baseline:esc(s.baselineOutput),current:esc(s.currentOutput)}:diffWords(s.baselineOutput,s.currentOutput);
   var chips='<div class="chip"><strong>Resolved by</strong>'+esc(s.details)+'</div>';
-  if(s.similarity!=null)chips+='<div class="chip"><strong>Similarity</strong>'+s.similarity.toFixed(4)+'</div>';
   if(s.judgeReasoning){
     var fwd,rev;
     try{fwd=JSON.parse(s.judgeReasoning.forward).verdict}catch(e){fwd=s.judgeReasoning.forward}
@@ -255,9 +251,9 @@ document.getElementById('stats').innerHTML=
   +scard('Scenarios',sm.total_scenarios)+scard('Duration',ms(sm.total_duration_ms))
   +scard('Cost','$'+sm.total_cost_usd.toFixed(4));
 
-var tb=sm.tier_breakdown,mx=Math.max(tb.tier1_schema,tb.tier2_embedding,tb.tier3_llm_judge,1);
+var tb=sm.tier_breakdown,mx=Math.max(tb.tier1_schema,tb.tier2_llm_judge,1);
 function tbar(l,c,col){var w=(c/mx*100).toFixed(1);return'<div class="tier-bar-row"><div class="tier-bar-label">'+esc(l)+'</div><div class="tier-bar-track"><div class="tier-bar-fill" style="width:'+w+'%;background:'+col+'"></div></div><div class="tier-bar-count">'+c+'</div></div>'}
-document.getElementById('tiers').innerHTML=tbar('Schema',tb.tier1_schema,'#60a5fa')+tbar('Embedding',tb.tier2_embedding,'#818cf8')+tbar('LLM Judge',tb.tier3_llm_judge,'#a78bfa');
+document.getElementById('tiers').innerHTML=tbar('Schema',tb.tier1_schema,'#60a5fa')+tbar('LLM Judge',tb.tier2_llm_judge,'#a78bfa');
 
 var t='<thead><tr><th>#</th><th>Prompt</th><th>Verdict</th><th>Tier</th><th>Time</th><th></th></tr></thead><tbody>';
 sc.forEach(function(s){t+='<tr><td>'+s.scenarioId+'</td><td class="prompt-cell">'+esc(s.prompt)+'</td><td>'+badge(s.verdict)+'</td><td>T'+s.tier+'</td><td>'+ms(s.timing.duration_ms)+'</td><td><a class="tbl-link" href="#scenario-'+s.scenarioId+'" onclick="switchToOutputs()">view</a></td></tr>'});

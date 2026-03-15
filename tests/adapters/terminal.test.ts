@@ -5,7 +5,7 @@ import type { EvalResults, ScenarioResult } from '../../src/types.js';
 function makeScenario(
   id: number,
   verdict: 'pass' | 'regressed' | 'inconclusive',
-  tier: 1 | 2 | 3 = 1
+  tier: 1 | 2 = 1
 ): ScenarioResult {
   return {
     scenarioId: id,
@@ -57,8 +57,7 @@ function makeResults(scenarios: ScenarioResult[]): EvalResults {
       total_duration_ms: 4500,
       tier_breakdown: {
         tier1_schema: 1,
-        tier2_embedding: 1,
-        tier3_llm_judge: 1,
+        tier2_llm_judge: 1,
       },
     },
     timing: {
@@ -153,7 +152,7 @@ describe('TerminalReporter', () => {
     await reporter.report(makeResults([makeScenario(1, 'pass')]));
     const output = logLines.join('\n');
     expect(output).toContain('schema');
-    expect(output).toContain('embedding');
+    expect(output).toContain('llm judge');
   });
 
   it('name is "terminal"', () => {

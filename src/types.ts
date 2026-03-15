@@ -88,8 +88,7 @@ export type ComparisonVerdict = 'pass' | 'regressed' | 'inconclusive' | 'error';
 export interface ComparisonResult {
   scenarioId: number;
   verdict: ComparisonVerdict;
-  tier: 1 | 2 | 3;
-  similarity?: number;
+  tier: 1 | 2;
   details: string;
   judgeReasoning?: { forward: string; reverse: string };
 }
@@ -129,8 +128,7 @@ export interface BenchmarkSummary {
   total_duration_ms: number;
   tier_breakdown: {
     tier1_schema: number;
-    tier2_embedding: number;
-    tier3_llm_judge: number;
+    tier2_llm_judge: number;
   };
 }
 
@@ -164,8 +162,7 @@ export interface ViewerScenario {
   baselineOutput: string;
   currentOutput: string;
   verdict: ComparisonVerdict;
-  tier: 1 | 2 | 3;
-  similarity?: number;
+  tier: 1 | 2;
   details: string;
   judgeReasoning?: { forward: string; reverse: string };
   timing: TimingData;
@@ -176,7 +173,6 @@ export interface ViewerScenario {
 export interface SnapevalConfig {
   adapter: string;
   inference: string;
-  threshold: number;
   runs: number;
   budget: string;
 }

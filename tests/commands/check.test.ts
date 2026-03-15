@@ -78,7 +78,7 @@ describe('checkCommand', () => {
       tmpDir,
       makeSkillAdapter('baseline 1'),
       makeInference(),
-      { threshold: 0.85, budget: 'unlimited' }
+      { budget: 'unlimited' }
     );
 
     expect(results.skillName).toBe('test-skill');
@@ -91,7 +91,6 @@ describe('checkCommand', () => {
   it('throws SnapevalError when evals.json is missing', async () => {
     await expect(
       checkCommand(tmpDir, makeSkillAdapter(), makeInference(), {
-        threshold: 0.85,
         budget: 'unlimited',
       })
     ).rejects.toThrow('No evals.json found');
@@ -103,7 +102,6 @@ describe('checkCommand', () => {
 
     await expect(
       checkCommand(tmpDir, makeSkillAdapter(), makeInference(), {
-        threshold: 0.85,
         budget: 'unlimited',
       })
     ).rejects.toThrow('No baselines found');
@@ -119,7 +117,7 @@ describe('checkCommand', () => {
       tmpDir,
       makeSkillAdapter('baseline'),
       makeInference(),
-      { threshold: 0.85, budget: 'unlimited' }
+      { budget: 'unlimited' }
     );
 
     // Only scenario 1 has a baseline; scenario 2 is skipped
@@ -135,7 +133,7 @@ describe('checkCommand', () => {
       tmpDir,
       makeSkillAdapter('baseline 1'),
       makeInference(),
-      { threshold: 0.85, budget: 'unlimited' }
+      { budget: 'unlimited' }
     );
 
     for (const scenario of results.scenarios) {
@@ -152,7 +150,7 @@ describe('checkCommand', () => {
       tmpDir,
       makeSkillAdapter('same output'),
       makeInference(),
-      { threshold: 0.85, budget: 'unlimited' }
+      { budget: 'unlimited' }
     );
 
     expect(results.summary.passed).toBe(2);
@@ -179,7 +177,7 @@ describe('checkCommand', () => {
       tmpDir,
       makeSkillAdapter('This is plain prose output without any list structure at all.'),
       inference,
-      { threshold: 0.85, budget: 'unlimited', skipEmbedding: true }
+      { budget: 'unlimited' }
     );
 
     expect(results.summary.regressed).toBeGreaterThan(0);
@@ -198,7 +196,7 @@ describe('checkCommand', () => {
       tmpDir,
       skillAdapter,
       makeInference(),
-      { threshold: 0.85, budget: 'unlimited' }
+      { budget: 'unlimited' }
     );
 
     // 2 scenarios x 100 tokens each = 200
@@ -213,7 +211,7 @@ describe('checkCommand', () => {
       tmpDir,
       makeSkillAdapter('new output'),
       makeInference(),
-      { threshold: 0.85, budget: 'unlimited' }
+      { budget: 'unlimited' }
     );
 
     for (const scenario of results.scenarios) {
@@ -238,7 +236,7 @@ describe('checkCommand', () => {
       tmpDir,
       makeSkillAdapter('result'),
       makeInference(),
-      { threshold: 0.85, budget: 'unlimited' }
+      { budget: 'unlimited' }
     );
 
     expect(results.skillName).toBe('single-skill');
