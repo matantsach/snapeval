@@ -173,22 +173,6 @@ function pluginHasReportSection(): boolean {
   }
 }
 
-/** List all files in a directory recursively (for debug logging). */
-function listDirRecursive(dir: string, prefix = ''): string[] {
-  const results: string[] = [];
-  try {
-    for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
-      const rel = prefix ? `${prefix}/${entry.name}` : entry.name;
-      if (entry.isDirectory()) {
-        results.push(...listDirRecursive(path.join(dir, entry.name), rel));
-      } else {
-        results.push(rel);
-      }
-    }
-  } catch { /* dir doesn't exist */ }
-  return results;
-}
-
 const copilotAvailable = isCopilotAvailable();
 
 describe('E2E: Plugin user stories', () => {
@@ -242,7 +226,11 @@ describe('E2E: Plugin user stories', () => {
 
     // --- User Story Tests ---
 
-    it('US1: evaluate — generates evals and captures baselines', () => {
+    // US1 and US4 require nested copilot calls (plugin → snapeval → copilot).
+    // Copilot CLI strips auth tokens from bash tool child processes for security,
+    // so the inner copilot call has no auth in CI. Runs fine locally.
+    // See: https://github.com/github/copilot-cli/issues/348
+    it.skip('US1: evaluate — generates evals and captures baselines', () => {
       if (!pluginInstalled) throw new Error('Plugin not installed');
 
       const skillDir = makeTmpDir();
@@ -252,14 +240,6 @@ describe('E2E: Plugin user stories', () => {
         `Evaluate the skill at ${skillDir}. Run all scenarios without asking for confirmation.`,
         { timeout: 300_000 },
       );
-
-      // Debug: log what Copilot said and what files exist
-      const us1Debug = [
-        `[US1] Exit code: ${result.exitCode}`,
-        `[US1] Copilot stdout:\n${result.stdout.slice(0, 3000)}`,
-        `[US1] Skill dir contents: ${JSON.stringify(listDirRecursive(skillDir))}`,
-      ].join('\n');
-      process.stderr.write(us1Debug + '\n');
 
       // Primary: evals.json created with valid structure
       const evalsPath = path.join(skillDir, 'evals', 'evals.json');
@@ -386,7 +366,8 @@ describe('E2E: Plugin user stories', () => {
       expect(viewerData).toHaveProperty('skillName');
     });
 
-    it('US4: approve — updates baselines after regression', () => {
+    // See US1 comment — same nested copilot auth issue in CI.
+    it.skip('US4: approve — updates baselines after regression', () => {
       if (!pluginInstalled) throw new Error('Plugin not installed');
 
       const skillDir = makeTmpDir();
@@ -405,14 +386,6 @@ describe('E2E: Plugin user stories', () => {
         `Approve all scenarios for the skill at ${skillDir}.`,
         { timeout: 300_000 },
       );
-
-      // Debug: log what Copilot said and what files exist
-      const us4Debug = [
-        `[US4] Exit code: ${result.exitCode}`,
-        `[US4] Copilot stdout:\n${result.stdout.slice(0, 3000)}`,
-        `[US4] Skill dir contents: ${JSON.stringify(listDirRecursive(skillDir))}`,
-      ].join('\n');
-      process.stderr.write(us4Debug + '\n');
 
       // Primary: snapshot content changed
       let changedCount = 0;
