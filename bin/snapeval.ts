@@ -9,6 +9,7 @@ import { captureCommand } from '../src/commands/capture.js';
 import { checkCommand } from '../src/commands/check.js';
 import { approveCommand, approveFromResults } from '../src/commands/approve.js';
 import { reportCommand } from '../src/commands/report.js';
+import { ideateCommand } from '../src/commands/ideate.js';
 import { SnapevalError } from '../src/errors.js';
 import * as path from 'node:path';
 
@@ -187,6 +188,22 @@ program
       if (hasRegressions) {
         process.exit(1);
       }
+      process.exit(0);
+    } catch (err) {
+      handleError(err);
+    }
+  });
+
+// --- ideate ---
+program
+  .command('ideate')
+  .description('Open the interactive scenario ideation viewer')
+  .argument('[skill-dir]', 'Path to skill directory', process.cwd())
+  .action(async (skillDir: string) => {
+    try {
+      const skillPath = path.resolve(skillDir);
+      const outputPath = await ideateCommand(skillPath);
+      console.log(`Ideation viewer opened: ${outputPath}`);
       process.exit(0);
     } catch (err) {
       handleError(err);

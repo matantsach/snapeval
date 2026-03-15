@@ -39,7 +39,8 @@
     "src/",
     "plugin.json",
     "skills/snapeval/SKILL.md",
-    "scripts/"
+    "scripts/",
+    "assets/"
   ],
   "dependencies": {
     "chalk": "^5.4.1",

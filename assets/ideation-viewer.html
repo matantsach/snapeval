@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>snapeval — Scenario Ideation</title>
+<style>
+  /* === Reset & Base === */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: #faf9f6;
+    color: #1a1a1a;
+    line-height: 1.6;
+    padding: 2rem;
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+  code, pre, .mono { font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace; }
+
+  /* === Colors (shared with eval viewer) === */
+  :root {
+    --accent: #2563eb;
+    --accent-light: #dbeafe;
+    --pass: #16a34a;
+    --pass-bg: #dcfce7;
+    --fail: #dc2626;
+    --fail-bg: #fee2e2;
+    --warn: #ca8a04;
+    --warn-bg: #fef9c3;
+    --gray: #6b7280;
+    --gray-light: #f3f4f6;
+    --gray-border: #e5e7eb;
+    --bg: #faf9f6;
+    --card-bg: #ffffff;
+  }
+
+  /* === Layout === */
+  header { margin-bottom: 2rem; }
+  header h1 { font-size: 1.5rem; font-weight: 600; }
+  header .subtitle { color: var(--gray); font-size: 0.875rem; margin-top: 0.25rem; }
+  .stats { display: flex; gap: 1.5rem; margin-top: 1rem; flex-wrap: wrap; }
+  .stat { background: var(--card-bg); border: 1px solid var(--gray-border); border-radius: 8px; padding: 0.75rem 1rem; }
+  .stat-value { font-size: 1.25rem; font-weight: 600; }
+  .stat-label { font-size: 0.75rem; color: var(--gray); text-transform: uppercase; letter-spacing: 0.05em; }
+
+  /* === Sections === */
+  section { margin-bottom: 2rem; }
+  section h2 { font-size: 1.125rem; font-weight: 600; margin-bottom: 1rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--gray-border); }
+  section h3 { font-size: 0.875rem; font-weight: 600; color: var(--gray); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.75rem; }
+
+  /* === Cards === */
+  .card-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1rem; }
+  .card {
+    background: var(--card-bg);
+    border: 1px solid var(--gray-border);
+    border-radius: 8px;
+    padding: 1rem;
+    transition: border-color 0.15s;
+  }
+  .card:hover { border-color: var(--accent); }
+  .card-title { font-weight: 600; font-size: 0.9rem; margin-bottom: 0.5rem; }
+  .card-desc { font-size: 0.85rem; color: var(--gray); }
+
+  /* === Ambiguities === */
+  .ambiguity-card { border-left: 3px solid var(--warn); }
+  .ambiguity-why { font-size: 0.8rem; color: var(--gray); margin: 0.5rem 0; font-style: italic; }
+  .scope-toggle { display: flex; gap: 0.5rem; margin-top: 0.75rem; }
+  .scope-btn {
+    padding: 0.3rem 0.75rem;
+    border: 1px solid var(--gray-border);
+    border-radius: 4px;
+    background: var(--card-bg);
+    cursor: pointer;
+    font-size: 0.8rem;
+    transition: all 0.15s;
+  }
+  .scope-btn:hover { border-color: var(--accent); }
+  .scope-btn.active-in { background: var(--pass-bg); border-color: var(--pass); color: var(--pass); }
+  .scope-btn.active-out { background: var(--gray-light); border-color: var(--gray); color: var(--gray); }
+
+  /* === Scenario Cards === */
+  .scenario-card { position: relative; }
+  .scenario-card.disabled { opacity: 0.5; }
+  .scenario-toggle {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    width: 40px;
+    height: 22px;
+    background: var(--pass);
+    border-radius: 11px;
+    cursor: pointer;
+    border: none;
+    transition: background 0.2s;
+  }
+  .scenario-toggle.off { background: var(--gray); }
+  .scenario-toggle::after {
+    content: '';
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 18px;
+    height: 18px;
+    background: white;
+    border-radius: 50%;
+    transition: transform 0.2s;
+  }
+  .scenario-toggle.off::after { transform: translateX(0); }
+  .scenario-toggle:not(.off)::after { transform: translateX(18px); }
+
+  .scenario-prompt {
+    background: var(--gray-light);
+    border-radius: 4px;
+    padding: 0.75rem;
+    font-family: monospace;
+    font-size: 0.85rem;
+    margin: 0.75rem 0;
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+  .scenario-why { font-size: 0.8rem; color: var(--gray); margin-bottom: 0.5rem; }
+  .scenario-expected { font-size: 0.85rem; margin-top: 0.5rem; }
+  .scenario-expected strong { font-weight: 600; }
+
+  .editable {
+    border: 1px solid transparent;
+    border-radius: 4px;
+    padding: 0.25rem;
+    transition: border-color 0.15s;
+    cursor: text;
+  }
+  .editable:hover { border-color: var(--gray-border); }
+  .editable:focus { border-color: var(--accent); outline: none; background: var(--accent-light); }
+
+  /* === Add Scenario === */
+  .add-form {
+    background: var(--card-bg);
+    border: 2px dashed var(--gray-border);
+    border-radius: 8px;
+    padding: 1.25rem;
+    margin-top: 1rem;
+  }
+  .add-form label { display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 0.25rem; margin-top: 0.75rem; }
+  .add-form label:first-child { margin-top: 0; }
+  .add-form textarea, .add-form input[type="text"] {
+    width: 100%;
+    padding: 0.5rem;
+    border: 1px solid var(--gray-border);
+    border-radius: 4px;
+    font-family: inherit;
+    font-size: 0.85rem;
+    resize: vertical;
+  }
+  .add-form textarea:focus, .add-form input[type="text"]:focus { border-color: var(--accent); outline: none; }
+
+  /* === Notes === */
+  #user-notes {
+    width: 100%;
+    min-height: 80px;
+    padding: 0.75rem;
+    border: 1px solid var(--gray-border);
+    border-radius: 8px;
+    font-family: inherit;
+    font-size: 0.85rem;
+    resize: vertical;
+  }
+  #user-notes:focus { border-color: var(--accent); outline: none; }
+
+  /* === Buttons === */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.6rem 1.25rem;
+    border: none;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .btn-primary { background: var(--accent); color: white; }
+  .btn-primary:hover { background: #1d4ed8; }
+  .btn-secondary { background: var(--gray-light); color: var(--gray); border: 1px solid var(--gray-border); }
+  .btn-secondary:hover { background: var(--gray-border); }
+  .btn-add { background: var(--pass-bg); color: var(--pass); border: 1px solid var(--pass); }
+  .btn-add:hover { background: var(--pass); color: white; }
+
+  .actions { display: flex; gap: 1rem; margin-top: 2rem; padding-top: 1.5rem; border-top: 2px solid var(--gray-border); }
+  .actions .spacer { flex: 1; }
+</style>
+</head>
+<body>
+
+<script>
+  const DATA = __ANALYSIS_DATA_PLACEHOLDER__;
+
+  // State
+  const state = {
+    scenarios: DATA.scenarios.map(s => ({ ...s })),
+    ambiguityDecisions: DATA.ambiguities.map(a => ({ description: a.description, decision: a.in_scope === true ? 'in_scope' : a.in_scope === false ? 'out_of_scope' : null })),
+    customScenarios: [],
+    userNotes: '',
+  };
+
+  function render() {
+    document.getElementById('app').innerHTML = `
+      ${renderHeader()}
+      ${renderSkillMap()}
+      ${renderAmbiguities()}
+      ${renderScenarios()}
+      ${renderAddForm()}
+      ${renderNotes()}
+      ${renderActions()}
+    `;
+    bindEvents();
+  }
+
+  function renderHeader() {
+    const enabled = state.scenarios.filter(s => s.enabled).length;
+    return `
+      <header>
+        <h1>snapeval — ${DATA.skill_name}</h1>
+        <div class="subtitle">Interactive Scenario Ideation</div>
+        <div class="stats">
+          <div class="stat"><div class="stat-value">${DATA.behaviors.length}</div><div class="stat-label">Behaviors</div></div>
+          <div class="stat"><div class="stat-value">${DATA.dimensions.length}</div><div class="stat-label">Dimensions</div></div>
+          <div class="stat"><div class="stat-value">${enabled} / ${state.scenarios.length + state.customScenarios.length}</div><div class="stat-label">Scenarios</div></div>
+          <div class="stat"><div class="stat-value">${DATA.ambiguities.length}</div><div class="stat-label">Ambiguities</div></div>
+        </div>
+      </header>
+    `;
+  }
+
+  function renderSkillMap() {
+    const behaviorCards = DATA.behaviors.map(b => `
+      <div class="card">
+        <div class="card-title">${esc(b.name)}</div>
+        <div class="card-desc">${esc(b.description)}</div>
+      </div>
+    `).join('');
+
+    const dimensionCards = DATA.dimensions.map(d => `
+      <div class="card">
+        <div class="card-title">${esc(d.name)}</div>
+        <div class="card-desc">${d.values.map(v => esc(v)).join(', ')}</div>
+      </div>
+    `).join('');
+
+    return `
+      <section>
+        <h2>Skill Map</h2>
+        <h3>Behaviors</h3>
+        <div class="card-grid">${behaviorCards}</div>
+        <h3 style="margin-top:1.5rem">Input Dimensions</h3>
+        <div class="card-grid">${dimensionCards}</div>
+      </section>
+    `;
+  }
+
+  function renderAmbiguities() {
+    if (DATA.ambiguities.length === 0) return '';
+    const cards = DATA.ambiguities.map((a, i) => {
+      const decision = state.ambiguityDecisions[i]?.decision;
+      return `
+        <div class="card ambiguity-card">
+          <div class="card-title">${esc(a.description)}</div>
+          <div class="ambiguity-why">${esc(a.why_it_matters)}</div>
+          <div class="scope-toggle">
+            <button class="scope-btn ${decision === 'in_scope' ? 'active-in' : ''}" data-amb-idx="${i}" data-decision="in_scope">In Scope</button>
+            <button class="scope-btn ${decision === 'out_of_scope' ? 'active-out' : ''}" data-amb-idx="${i}" data-decision="out_of_scope">Out of Scope</button>
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    return `
+      <section>
+        <h2>Gaps & Ambiguities</h2>
+        <div class="card-grid">${cards}</div>
+      </section>
+    `;
+  }
+
+  function renderScenarios() {
+    const cards = state.scenarios.map((s, i) => `
+      <div class="card scenario-card ${s.enabled ? '' : 'disabled'}">
+        <button class="scenario-toggle ${s.enabled ? '' : 'off'}" data-scenario-idx="${i}" title="${s.enabled ? 'Enabled' : 'Disabled'}"></button>
+        <div class="card-title">Scenario ${s.id}</div>
+        <div class="scenario-why">${esc(s.why)}</div>
+        <div class="scenario-prompt editable" contenteditable="true" data-field="prompt" data-scenario-idx="${i}">${esc(s.prompt)}</div>
+        <div class="scenario-expected"><strong>Expected:</strong> <span class="editable" contenteditable="true" data-field="expected_behavior" data-scenario-idx="${i}">${esc(s.expected_behavior)}</span></div>
+      </div>
+    `).join('');
+
+    const customCards = state.customScenarios.map((s, i) => `
+      <div class="card scenario-card" style="border-color:var(--pass)">
+        <div class="card-title" style="color:var(--pass)">Custom #${i + 1} <button class="btn-secondary" style="font-size:0.7rem;padding:0.15rem 0.4rem;margin-left:0.5rem" data-remove-custom="${i}">Remove</button></div>
+        <div class="scenario-prompt">${esc(s.prompt)}</div>
+        <div class="scenario-expected"><strong>Expected:</strong> ${esc(s.expected_behavior)}</div>
+      </div>
+    `).join('');
+
+    return `
+      <section>
+        <h2>Proposed Scenarios</h2>
+        <div class="card-grid">${cards}${customCards}</div>
+      </section>
+    `;
+  }
+
+  function renderAddForm() {
+    return `
+      <section>
+        <h2>Add Custom Scenario</h2>
+        <div class="add-form">
+          <label for="custom-prompt">User Prompt</label>
+          <textarea id="custom-prompt" rows="3" placeholder="Type a realistic user prompt..."></textarea>
+          <label for="custom-expected">Expected Behavior</label>
+          <input type="text" id="custom-expected" placeholder="What should happen?" />
+          <div style="margin-top:0.75rem">
+            <button class="btn btn-add" id="add-scenario-btn">Add Scenario</button>
+          </div>
+        </div>
+      </section>
+    `;
+  }
+
+  function renderNotes() {
+    return `
+      <section>
+        <h2>Notes for AI</h2>
+        <textarea id="user-notes" placeholder="Add any context, constraints, or known issues you want the AI to consider...">${esc(state.userNotes)}</textarea>
+      </section>
+    `;
+  }
+
+  function renderActions() {
+    const enabledCount = state.scenarios.filter(s => s.enabled).length + state.customScenarios.length;
+    return `
+      <div class="actions">
+        <span style="color:var(--gray);font-size:0.85rem;align-self:center">${enabledCount} scenario${enabledCount !== 1 ? 's' : ''} will be exported</span>
+        <span class="spacer"></span>
+        <button class="btn btn-primary" id="confirm-btn">Confirm & Run</button>
+      </div>
+    `;
+  }
+
+  function bindEvents() {
+    // Scenario toggles
+    document.querySelectorAll('.scenario-toggle').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const idx = parseInt(btn.dataset.scenarioIdx);
+        state.scenarios[idx].enabled = !state.scenarios[idx].enabled;
+        render();
+      });
+    });
+
+    // Ambiguity scope buttons
+    document.querySelectorAll('.scope-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const idx = parseInt(btn.dataset.ambIdx);
+        const decision = btn.dataset.decision;
+        const current = state.ambiguityDecisions[idx].decision;
+        state.ambiguityDecisions[idx].decision = current === decision ? null : decision;
+        render();
+      });
+    });
+
+    // Editable fields (blur saves)
+    document.querySelectorAll('.editable[data-scenario-idx]').forEach(el => {
+      el.addEventListener('blur', () => {
+        const idx = parseInt(el.dataset.scenarioIdx);
+        const field = el.dataset.field;
+        state.scenarios[idx][field] = el.textContent.trim();
+      });
+    });
+
+    // Remove custom scenario
+    document.querySelectorAll('[data-remove-custom]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const idx = parseInt(btn.dataset.removeCustom);
+        state.customScenarios.splice(idx, 1);
+        render();
+      });
+    });
+
+    // Add scenario
+    const addBtn = document.getElementById('add-scenario-btn');
+    if (addBtn) {
+      addBtn.addEventListener('click', () => {
+        const prompt = document.getElementById('custom-prompt').value.trim();
+        const expected = document.getElementById('custom-expected').value.trim();
+        if (!prompt) return;
+        state.customScenarios.push({ prompt, expected_behavior: expected || 'Not specified' });
+        render();
+      });
+    }
+
+    // Notes
+    const notes = document.getElementById('user-notes');
+    if (notes) {
+      notes.addEventListener('input', () => { state.userNotes = notes.value; });
+    }
+
+    // Confirm & Run
+    const confirmBtn = document.getElementById('confirm-btn');
+    if (confirmBtn) {
+      confirmBtn.addEventListener('click', exportPlan);
+    }
+  }
+
+  function exportPlan() {
+    const plan = {
+      version: 1,
+      confirmed_scenarios: state.scenarios
+        .filter(s => s.enabled)
+        .map(s => ({
+          id: s.id,
+          prompt: s.prompt,
+          expected_behavior: s.expected_behavior,
+          covers: s.covers,
+          why: s.why,
+        })),
+      custom_scenarios: state.customScenarios.map(s => ({
+        prompt: s.prompt,
+        expected_behavior: s.expected_behavior,
+      })),
+      ambiguity_decisions: state.ambiguityDecisions.filter(a => a.decision !== null),
+      user_notes: state.userNotes || '',
+    };
+
+    const blob = new Blob([JSON.stringify(plan, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'scenario_plan.json';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+
+    const confirmBtn = document.getElementById('confirm-btn');
+    if (confirmBtn) {
+      confirmBtn.textContent = 'Exported! Return to your terminal.';
+      confirmBtn.disabled = true;
+      confirmBtn.style.background = 'var(--pass)';
+    }
+  }
+
+  function esc(str) {
+    if (!str) return '';
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+  }
+
+  // Boot
+  document.addEventListener('DOMContentLoaded', () => {
+    const app = document.createElement('div');
+    app.id = 'app';
+    document.body.appendChild(app);
+    render();
+  });
+</script>
+
+</body>
+</html>

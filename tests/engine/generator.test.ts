@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { buildGeneratorPrompt, generateEvals } from '../../src/engine/generator.js';
+import { buildGeneratorPrompt, generateEvals, writeEvalsJson } from '../../src/engine/generator.js';
 import type { InferenceAdapter } from '../../src/types.js';
 
 // --- buildGeneratorPrompt ---
@@ -145,5 +145,33 @@ describe('generateEvals', () => {
 
     expect(result.evals).toHaveLength(8);
     expect(result.evals[7].id).toBe(8);
+  });
+});
+
+// --- writeEvalsJson ---
+
+describe('writeEvalsJson', () => {
+  it('maps scenarios to EvalsFile with correct structure', () => {
+    const result = writeEvalsJson('my-skill', [
+      { id: 1, prompt: 'hello', expected_output: 'greeting' },
+      { id: 2, prompt: 'bye', expected_output: 'farewell' },
+    ]);
+
+    expect(result.skill_name).toBe('my-skill');
+    expect(result.generated_by).toBe('snapeval interactive');
+    expect(result.evals).toHaveLength(2);
+    expect(result.evals[0]).toEqual({
+      id: 1,
+      prompt: 'hello',
+      expected_output: 'greeting',
+      files: [],
+      assertions: [],
+    });
+  });
+
+  it('handles empty scenarios array', () => {
+    const result = writeEvalsJson('empty-skill', []);
+    expect(result.evals).toEqual([]);
+    expect(result.skill_name).toBe('empty-skill');
   });
 });

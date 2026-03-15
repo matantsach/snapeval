@@ -36,6 +36,27 @@ function extractJSON(text: string): string {
   return text.trim();
 }
 
+export function writeEvalsJson(
+  skillName: string,
+  scenarios: Array<{
+    id: number;
+    prompt: string;
+    expected_output: string;
+  }>
+): EvalsFile {
+  return {
+    skill_name: skillName,
+    generated_by: 'snapeval interactive',
+    evals: scenarios.map(s => ({
+      id: s.id,
+      prompt: s.prompt,
+      expected_output: s.expected_output,
+      files: [],
+      assertions: [],
+    })),
+  };
+}
+
 export async function generateEvals(
   skillContent: string,
   skillName: string,
