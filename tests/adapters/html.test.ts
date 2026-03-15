@@ -161,4 +161,29 @@ describe('HTMLReporter', () => {
     const data = JSON.parse(fs.readFileSync(path.join(tmpDir, 'viewer-data.json'), 'utf-8'));
     expect(data.previousIteration).toBeUndefined();
   });
+
+  it('escapes closing script tags in embedded JSON data', async () => {
+    const scenario = makeScenario(1, 'pass');
+    scenario.prompt = 'payload</script><script>alert(1)</script>';
+    const results = makeResults([scenario]);
+    results.skillName = 'test</script>';
+    const reporter = new HTMLReporter(tmpDir, 1);
+    await reporter.report(results);
+    const html = fs.readFileSync(path.join(tmpDir, 'report.html'), 'utf-8');
+    // </script> in data must be escaped to prevent script breakout
+    const scriptBlocks = html.split(/<script>/gi);
+    // Should have exactly 2 script blocks: one from <head> (none) and the main one
+    // The closing </script> should only appear as the legitimate end of our script block
+    expect(html).not.toContain('</script><script>alert');
+  });
+
+  it('escapes skill name in title tag', async () => {
+    const results = makeResults([makeScenario(1, 'pass')]);
+    results.skillName = '<img onerror=alert(1)>';
+    const reporter = new HTMLReporter(tmpDir, 1);
+    await reporter.report(results);
+    const html = fs.readFileSync(path.join(tmpDir, 'report.html'), 'utf-8');
+    // Title should have HTML-escaped skill name
+    expect(html).toContain('&lt;img onerror=alert(1)&gt;');
+  });
 });
