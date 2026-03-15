@@ -62,19 +62,6 @@
   .card-title { font-weight: 600; font-size: 0.9rem; margin-bottom: 0.5rem; }
   .card-desc { font-size: 0.85rem; color: var(--gray); }
 
-  /* === Tags === */
-  .tag {
-    display: inline-block;
-    background: var(--accent-light);
-    color: var(--accent);
-    font-size: 0.75rem;
-    font-weight: 500;
-    padding: 0.2rem 0.5rem;
-    border-radius: 4px;
-    margin: 0.15rem;
-  }
-  .tag.dim { background: var(--gray-light); color: var(--gray); }
-
   /* === Ambiguities === */
   .ambiguity-card { border-left: 3px solid var(--warn); }
   .ambiguity-why { font-size: 0.8rem; color: var(--gray); margin: 0.5rem 0; font-style: italic; }
@@ -91,23 +78,6 @@
   .scope-btn:hover { border-color: var(--accent); }
   .scope-btn.active-in { background: var(--pass-bg); border-color: var(--pass); color: var(--pass); }
   .scope-btn.active-out { background: var(--gray-light); border-color: var(--gray); color: var(--gray); }
-
-  /* === Coverage Matrix === */
-  .matrix-wrapper { overflow-x: auto; }
-  table.matrix {
-    border-collapse: collapse;
-    width: 100%;
-    font-size: 0.8rem;
-  }
-  table.matrix th, table.matrix td {
-    border: 1px solid var(--gray-border);
-    padding: 0.5rem 0.75rem;
-    text-align: center;
-  }
-  table.matrix th { background: var(--gray-light); font-weight: 600; }
-  table.matrix td.covered { background: var(--pass-bg); color: var(--pass); }
-  table.matrix td.not-covered { background: var(--card-bg); color: var(--gray-light); }
-  table.matrix td.scenario-label { text-align: left; font-weight: 500; max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
   /* === Scenario Cards === */
   .scenario-card { position: relative; }
@@ -239,7 +209,6 @@
       ${renderHeader()}
       ${renderSkillMap()}
       ${renderAmbiguities()}
-      ${renderCoverageMatrix()}
       ${renderScenarios()}
       ${renderAddForm()}
       ${renderNotes()}
@@ -275,7 +244,7 @@
     const dimensionCards = DATA.dimensions.map(d => `
       <div class="card">
         <div class="card-title">${esc(d.name)}</div>
-        <div>${d.values.map(v => `<span class="tag dim">${esc(v)}</span>`).join(' ')}</div>
+        <div class="card-desc">${d.values.map(v => esc(v)).join(', ')}</div>
       </div>
     `).join('');
 
@@ -314,45 +283,6 @@
     `;
   }
 
-  function renderCoverageMatrix() {
-    const allScenarios = [...state.scenarios.filter(s => s.enabled), ...state.customScenarios];
-    if (allScenarios.length === 0 || DATA.dimensions.length === 0) return '';
-
-    // Group by dimension
-    const dimGroups = Object.create(null);
-    DATA.dimensions.forEach(d => { dimGroups[d.name] = d.values; });
-
-    const dimNames = Object.keys(dimGroups);
-    const dimValues = dimNames.flatMap(d => dimGroups[d].map(v => ({ dim: d, value: v, key: `${d}:${v}` })));
-
-    const headerCells = dimValues.map(dv => `<th title="${esc(dv.dim)}">${esc(dv.value)}</th>`).join('');
-    const rows = allScenarios.map((s, i) => {
-      const covers = new Set(s.covers || []);
-      const cells = dimValues.map(dv =>
-        `<td class="${covers.has(dv.key) ? 'covered' : 'not-covered'}">${covers.has(dv.key) ? '●' : '·'}</td>`
-      ).join('');
-      const label = s.prompt ? s.prompt.slice(0, 50) + (s.prompt.length > 50 ? '...' : '') : `Custom #${i+1}`;
-      return `<tr><td class="scenario-label" title="${esc(s.prompt || '')}">${esc(label)}</td>${cells}</tr>`;
-    }).join('');
-
-    const groupHeaders = dimNames.map(d => `<th colspan="${dimGroups[d].length}" style="background:var(--accent-light);color:var(--accent)">${esc(d)}</th>`).join('');
-
-    return `
-      <section>
-        <h2>Coverage Matrix</h2>
-        <div class="matrix-wrapper">
-          <table class="matrix">
-            <thead>
-              <tr><th></th>${groupHeaders}</tr>
-              <tr><th>Scenario</th>${headerCells}</tr>
-            </thead>
-            <tbody>${rows}</tbody>
-          </table>
-        </div>
-      </section>
-    `;
-  }
-
   function renderScenarios() {
     const cards = state.scenarios.map((s, i) => `
       <div class="card scenario-card ${s.enabled ? '' : 'disabled'}">
@@ -360,7 +290,6 @@
         <div class="card-title">Scenario ${s.id}</div>
         <div class="scenario-why">${esc(s.why)}</div>
         <div class="scenario-prompt editable" contenteditable="true" data-field="prompt" data-scenario-idx="${i}">${esc(s.prompt)}</div>
-        <div>${(s.covers || []).map(c => `<span class="tag">${esc(c)}</span>`).join(' ')}</div>
         <div class="scenario-expected"><strong>Expected:</strong> <span class="editable" contenteditable="true" data-field="expected_behavior" data-scenario-idx="${i}">${esc(s.expected_behavior)}</span></div>
       </div>
     `).join('');
