@@ -15,17 +15,17 @@ describe('resolveConfig', () => {
 
   it('merges config file values over defaults', () => {
     vi.mocked(fs.existsSync).mockReturnValue(true);
-    vi.mocked(fs.readFileSync).mockReturnValue(JSON.stringify({ threshold: 0.9 }));
+    vi.mocked(fs.readFileSync).mockReturnValue(JSON.stringify({ runs: 5 }));
     const config = resolveConfig({}, '/project');
-    expect(config.threshold).toBe(0.9);
+    expect(config.runs).toBe(5);
     expect(config.adapter).toBe('copilot-cli');
   });
 
   it('CLI flags override config file', () => {
     vi.mocked(fs.existsSync).mockReturnValue(true);
-    vi.mocked(fs.readFileSync).mockReturnValue(JSON.stringify({ threshold: 0.9 }));
-    const config = resolveConfig({ threshold: 0.7 }, '/project');
-    expect(config.threshold).toBe(0.7);
+    vi.mocked(fs.readFileSync).mockReturnValue(JSON.stringify({ runs: 5 }));
+    const config = resolveConfig({ runs: 10 }, '/project');
+    expect(config.runs).toBe(10);
   });
 
   it('checks skill dir config before project root', () => {

@@ -6,7 +6,7 @@ import { CopilotInference } from './copilot.js';
 
 function isCopilotAvailable(): boolean {
   try {
-    execFileSync('gh', ['copilot', '--version'], { encoding: 'utf-8', stdio: 'pipe' });
+    execFileSync('copilot', ['--version'], { encoding: 'utf-8', stdio: 'pipe' });
     return true;
   } catch {
     return false;
@@ -38,7 +38,7 @@ export function resolveInference(preference: string): InferenceAdapter {
 
     throw new AdapterNotAvailableError(
       'inference',
-      'No inference adapter available. Install GitHub Copilot CLI (`gh extension install github/gh-copilot`) or set GITHUB_TOKEN.'
+      'No inference adapter available. Install GitHub Copilot CLI (`npm install -g @github/copilot`) or set GITHUB_TOKEN.'
     );
   }
 
@@ -46,7 +46,7 @@ export function resolveInference(preference: string): InferenceAdapter {
     if (!isCopilotAvailable()) {
       throw new AdapterNotAvailableError(
         'copilot',
-        'GitHub Copilot CLI is not available. Install with: gh extension install github/gh-copilot'
+        'GitHub Copilot CLI is not available. Install with: npm install -g @github/copilot'
       );
     }
     const fallback = isGitHubTokenAvailable() ? new GitHubModelsInference() : undefined;
