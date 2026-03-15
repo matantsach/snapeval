@@ -164,6 +164,7 @@ program
   .option('--budget <amount>', 'Spend cap in USD (or "unlimited")', 'unlimited')
   .option('--skip-embedding', 'Skip embedding tier (tier 2)')
   .option('--verbose', 'Verbose output')
+  .option('--html', 'Generate HTML report viewer')
   .argument('[skill-dir]', 'Path to skill directory', process.cwd())
   .action(async (skillDir: string, opts: Record<string, string | boolean>) => {
     try {
@@ -187,7 +188,10 @@ program
         skipEmbedding: Boolean(opts.skipEmbedding),
       });
 
-      await reportCommand(skillPath, results, { verbose: Boolean(opts.verbose) });
+      await reportCommand(skillPath, results, {
+        verbose: Boolean(opts.verbose),
+        html: Boolean(opts.html),
+      });
 
       const hasRegressions = results.summary.regressed > 0;
       if (hasRegressions) {

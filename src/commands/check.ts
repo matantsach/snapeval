@@ -59,6 +59,7 @@ export async function checkCommand(
         duration_ms: newOutput.metadata.durationMs,
       },
       newOutput,
+      baselineOutput: baseline.output,
     });
   }
 
