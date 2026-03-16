@@ -10,6 +10,7 @@ import { checkCommand } from '../src/commands/check.js';
 import { approveCommand, approveFromResults } from '../src/commands/approve.js';
 import { reportCommand } from '../src/commands/report.js';
 import { ideateCommand } from '../src/commands/ideate.js';
+import { reviewCommand } from '../src/commands/review.js';
 import { SnapevalError } from '../src/errors.js';
 import * as path from 'node:path';
 
@@ -185,6 +186,43 @@ program
       });
 
       const hasRegressions = results.summary.regressed > 0;
+      if (hasRegressions) {
+        process.exit(1);
+      }
+      process.exit(0);
+    } catch (err) {
+      handleError(err);
+    }
+  });
+
+// --- review ---
+program
+  .command('review')
+  .description('Run checks, generate HTML report, and open in browser')
+  .option('--adapter <adapter>', 'Skill adapter to use', 'copilot-cli')
+  .option('--inference <inference>', 'Inference adapter to use', 'auto')
+  .option('--budget <amount>', 'Spend cap in USD (or "unlimited")', 'unlimited')
+  .option('--verbose', 'Verbose output')
+  .argument('[skill-dir]', 'Path to skill directory', process.cwd())
+  .action(async (skillDir: string, opts: Record<string, string | boolean>) => {
+    try {
+      const skillPath = path.resolve(skillDir);
+      const config = resolveConfig(
+        {
+          adapter: opts.adapter as string,
+          inference: opts.inference as string,
+          budget: opts.budget as string,
+        },
+        process.cwd(),
+        skillPath
+      );
+      const skillAdapter = resolveSkillAdapter(config.adapter);
+      const inference = resolveInference(config.inference);
+
+      const { hasRegressions } = await reviewCommand(skillPath, skillAdapter, inference, {
+        budget: config.budget,
+      });
+
       if (hasRegressions) {
         process.exit(1);
       }
