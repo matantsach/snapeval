@@ -31,14 +31,15 @@ const MINIMAL_EVALS = {
   ],
 };
 
-function isCopilotSDKAvailable(): boolean {
+async function isCopilotSDKAvailable(): Promise<boolean> {
   try {
-    // Check that the SDK module can be imported (use import() for ESM compat)
-    execFileSync('node', ['--input-type=module', '-e', "await import('@github/copilot-sdk')"], {
-      encoding: 'utf-8',
-      stdio: 'pipe',
-      timeout: 10_000,
-    });
+    // Check that the SDK module can be imported from this process
+    // @ts-ignore — module may not be installed (optional peer dep)
+    await import('@github/copilot-sdk');
+  } catch {
+    return false;
+  }
+  try {
     // Check that Copilot CLI is available (SDK needs it as the backend)
     execFileSync('copilot', ['--version'], { encoding: 'utf-8', stdio: 'pipe' });
     return true;
@@ -80,7 +81,7 @@ function setupSkill(destDir: string): void {
   );
 }
 
-const sdkAvailable = isCopilotSDKAvailable();
+const sdkAvailable = await isCopilotSDKAvailable();
 
 describe('E2E: Copilot SDK flow', () => {
   const tmpDirs: string[] = [];
