@@ -8,6 +8,11 @@
         "plugin.json",
         {
           "type": "json",
+          "path": ".claude-plugin/plugin.json",
+          "jsonpath": "$.version"
+        },
+        {
+          "type": "json",
           "path": ".github/plugin/marketplace.json",
           "jsonpath": "$.metadata.version"
         },
