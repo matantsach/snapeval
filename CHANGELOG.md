@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.4.0](https://github.com/matantsach/snapeval/compare/snapeval-v1.3.1...snapeval-v1.4.0) (2026-03-16)
+
+
+### Features
+
+* add Copilot SDK adapter for programmatic skill invocation ([#19](https://github.com/matantsach/snapeval/issues/19)) ([3aa688b](https://github.com/matantsach/snapeval/commit/3aa688b44abca93949732f62d933856baa0fdb88))
+
 ## [1.3.1](https://github.com/matantsach/snapeval/compare/snapeval-v1.3.0...snapeval-v1.3.1) (2026-03-15)
 
 
