@@ -33,10 +33,11 @@ const MINIMAL_EVALS = {
 
 function isCopilotSDKAvailable(): boolean {
   try {
-    // Check that the SDK module resolves
-    execFileSync('node', ['-e', "require.resolve('@github/copilot-sdk')"], {
+    // Check that the SDK module can be imported (use import() for ESM compat)
+    execFileSync('node', ['--input-type=module', '-e', "await import('@github/copilot-sdk')"], {
       encoding: 'utf-8',
       stdio: 'pipe',
+      timeout: 10_000,
     });
     // Check that Copilot CLI is available (SDK needs it as the backend)
     execFileSync('copilot', ['--version'], { encoding: 'utf-8', stdio: 'pipe' });
@@ -178,15 +179,10 @@ describe('E2E: Copilot SDK flow', () => {
     });
   });
 
-  describe('without SDK installed', () => {
+  describe.skipIf(sdkAvailable)('without SDK installed', () => {
     it('gracefully errors when using copilot-sdk adapter without SDK installed', () => {
-      // This test runs regardless of SDK availability — it tests the error path
-      // by checking that the adapter name is recognized (not "unknown adapter")
       const skillDir = makeTmpDir();
       setupSkill(skillDir);
-
-      // If SDK is available, skip this test — it only makes sense when SDK is missing
-      if (sdkAvailable) return;
 
       const result = runSnapeval(['capture', '--adapter', 'copilot-sdk', skillDir]);
       expect(result.exitCode).toBe(2);

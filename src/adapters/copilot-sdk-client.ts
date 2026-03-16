@@ -9,6 +9,8 @@
  * @github/copilot-sdk pay no cost.
  */
 
+import { createRequire } from 'node:module';
+
 // We store the client as `any` to avoid a hard import dependency
 // on @github/copilot-sdk.  The module may not be installed.
 let clientInstance: any = null;
@@ -50,7 +52,8 @@ export async function stopClient(): Promise<void> {
 
 export function isSDKInstalled(): boolean {
   try {
-    require.resolve('@github/copilot-sdk');
+    const req = createRequire(import.meta.url);
+    req.resolve('@github/copilot-sdk');
     return true;
   } catch {
     return false;
