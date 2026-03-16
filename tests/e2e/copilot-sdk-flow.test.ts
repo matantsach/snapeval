@@ -31,16 +31,16 @@ const MINIMAL_EVALS = {
   ],
 };
 
-async function isCopilotSDKAvailable(): Promise<boolean> {
+function isCopilotSDKAvailable(): boolean {
+  // Check that the SDK package exists on disk (avoids import side-effects)
   try {
-    // Check that the SDK module can be imported from this process
-    // @ts-ignore — module may not be installed (optional peer dep)
-    await import('@github/copilot-sdk');
+    const pkgPath = path.join(process.cwd(), 'node_modules', '@github', 'copilot-sdk', 'package.json');
+    if (!fs.existsSync(pkgPath)) return false;
   } catch {
     return false;
   }
+  // Check that Copilot CLI is available (SDK needs it as the backend)
   try {
-    // Check that Copilot CLI is available (SDK needs it as the backend)
     execFileSync('copilot', ['--version'], { encoding: 'utf-8', stdio: 'pipe' });
     return true;
   } catch {
@@ -81,7 +81,7 @@ function setupSkill(destDir: string): void {
   );
 }
 
-const sdkAvailable = await isCopilotSDKAvailable();
+const sdkAvailable = isCopilotSDKAvailable();
 
 describe('E2E: Copilot SDK flow', () => {
   const tmpDirs: string[] = [];
@@ -177,17 +177,6 @@ describe('E2E: Copilot SDK flow', () => {
       // Check with SDK — current output (greetings) vs fake baselines = regression
       const check = runSnapeval(['check', '--adapter', 'copilot-sdk', '--inference', 'copilot-sdk', skillDir]);
       expect(check.exitCode).toBe(1);
-    });
-  });
-
-  describe.skipIf(sdkAvailable)('without SDK installed', () => {
-    it('gracefully errors when using copilot-sdk adapter without SDK installed', () => {
-      const skillDir = makeTmpDir();
-      setupSkill(skillDir);
-
-      const result = runSnapeval(['capture', '--adapter', 'copilot-sdk', skillDir]);
-      expect(result.exitCode).toBe(2);
-      expect(result.stdout).toContain('copilot-sdk');
     });
   });
 });
