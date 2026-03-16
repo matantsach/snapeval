@@ -31,3 +31,28 @@ jobs:
         run: npm run test:e2e
         env:
           COPILOT_GITHUB_TOKEN: ${{ secrets.COPILOT_GITHUB_TOKEN }}
+
+  e2e-sdk:
+    name: E2E (Copilot SDK)
+    runs-on: ubuntu-latest
+    if: ${{ github.event_name == 'push' || !github.event.pull_request.head.repo.fork }}
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: Install Copilot CLI
+        run: npm install -g @github/copilot
+
+      - name: Install Copilot SDK
+        run: npm install @github/copilot-sdk
+
+      - name: Run SDK E2E tests
+        run: npx vitest run --config vitest.e2e.config.ts tests/e2e/copilot-sdk-flow.test.ts
+        env:
+          COPILOT_GITHUB_TOKEN: ${{ secrets.COPILOT_GITHUB_TOKEN }}
