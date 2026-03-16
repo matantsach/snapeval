@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.5.0](https://github.com/matantsach/snapeval/compare/snapeval-v1.4.0...snapeval-v1.5.0) (2026-03-16)
+
+
+### Features
+
+* smart routing + consolidate plugin structure ([#24](https://github.com/matantsach/snapeval/issues/24)) ([9fc3f33](https://github.com/matantsach/snapeval/commit/9fc3f33b4014d33be2f3538f9d337d0adffb0873))
+
 ## [1.4.0](https://github.com/matantsach/snapeval/compare/snapeval-v1.3.1...snapeval-v1.4.0) (2026-03-16)
 
 
