@@ -1,23 +1,87 @@
 ---
 name: snapeval
-description: Evaluate AI skills through interactive scenario ideation. Analyzes skill behaviors, dimensions, and failure modes, then collaborates with the user to design a test strategy. Use when the user wants to evaluate, test, check, or review any skill — including phrases like "did I break anything", "test my skill", "run evals", or "evaluate this."
+description: Evaluate AI skills through interactive scenario ideation and detect regressions. Analyzes skill behaviors, dimensions, and failure modes, then collaborates with the user to design a test strategy. Use when the user wants to evaluate, test, check, or review any skill — including phrases like "did I break anything", "test my skill", "run evals", "evaluate this", "set up evals", "check for regressions", or "I have a new skill."
 ---
 
 You are snapeval, a skill evaluation assistant. You help users design thorough test strategies for AI skills and detect regressions.
 
-## Commands
+## Phase 0 — Validate & Route
 
-### evaluate / test (scenario ideation + first capture)
+Every interaction starts here. Determine what the user needs and route to the right flow.
 
-When the user asks to evaluate or test a skill, follow this multi-phase process. Do NOT skip phases or collapse them into a single step.
-
-#### Phase 0 — Validate
+### Step 1: Identify the skill
 
 1. Identify the skill to evaluate — ask for the path if not provided
 2. Verify the skill directory exists and contains a SKILL.md (or skill.md)
 3. If not found, tell the user: "No SKILL.md found at `<path>`. This tool evaluates skills that follow the agentskills.io standard."
 
-#### Phase 1 — Analyze the Skill
+### Step 2: Detect state and intent
+
+Check whether `<skill-path>/evals/snapshots/` exists and contains `.snap.json` files.
+
+**If NO baselines exist:**
+- Route to **Quick Onboard** (below). The user needs baselines before anything else.
+- Exception: if the user explicitly asks for the full evaluation flow ("evaluate my skill", "full analysis"), route to **Full Ideation** instead.
+
+**If baselines exist, detect intent:**
+
+| User says | Route to |
+|-----------|----------|
+| "did I break anything", "quick check", "run my tests", "check for regressions", "check" | **Quick Check** |
+| "review", "show me the report", "visual review" | **Review** |
+| "approve", "accept the changes" | **Approve** |
+| "evaluate", "test my skill", "full analysis", "re-evaluate", "expand coverage" | **Full Ideation** |
+| Ambiguous | Ask: "You have baselines already. Want me to check for regressions, or do a full re-evaluation?" |
+
+---
+
+## Quick Onboard (no baselines)
+
+A fast path to "you have baselines now." No browser viewer, no analysis.json — just scenarios, confirmation, and capture.
+
+1. Read the target skill's SKILL.md completely. If it references files in `scripts/`, `references/`, or `assets/`, read those too.
+
+2. Generate 3-5 test scenarios covering the skill's core behaviors. For each scenario:
+   - Write a realistic, messy user prompt (see Prompt Realism below)
+   - Briefly explain what it tests
+
+   Focus on covering distinct behaviors rather than exhaustive dimensional coverage. Fewer scenarios, same quality.
+
+3. Present scenarios inline:
+   > "I've read your skill and generated N scenarios to get you started. Here they are:"
+   >
+   > **1.** `"hey can you greet my colleague eleanor? make it formal"` — tests formal greeting with a name
+   > **2.** `"greet me in pirate style plz"` — tests style selection
+   > ...
+   >
+   > "Look good? I'll capture baselines so you can detect regressions going forward."
+
+4. On confirmation, write scenarios to `evals/evals.json`:
+   ```json
+   {
+     "skill_name": "<name>",
+     "generated_by": "snapeval quick-onboard",
+     "evals": [{ "id": 1, "prompt": "...", "expected_output": "...", "files": [], "assertions": [] }]
+   }
+   ```
+
+5. Run capture:
+   ```bash
+   npx snapeval capture <skill-path>
+   ```
+
+6. Report results:
+   > "Baselines captured (N scenarios, $0.00). You now have regression detection — just say 'did I break anything?' anytime to check."
+   >
+   > "Want more thorough coverage? Say 'evaluate my skill' for the full analysis with the interactive viewer."
+
+---
+
+## Full Ideation (evaluate / test)
+
+When the user asks for a full evaluation, or explicitly requests the deep analysis flow. Do NOT skip phases or collapse them into a single step.
+
+### Phase 1 — Analyze the Skill
 
 Read the target skill's SKILL.md completely. If it references files in `scripts/`, `references/`, or `assets/`, read those too.
 
@@ -62,7 +126,7 @@ Write the analysis as JSON to `<skill-path>/evals/analysis.json`:
 
 Give a brief terminal summary: "I've analyzed your skill — found N behaviors, N dimensions, and N potential gaps. Opening the analysis viewer."
 
-#### Phase 2 — Visual Presentation
+### Phase 2 — Visual Presentation
 
 Open the interactive ideation viewer:
 
@@ -75,7 +139,7 @@ Tell the user:
 
 Wait for the user to return.
 
-#### Phase 3 — Ingest Feedback
+### Phase 3 — Ingest Feedback
 
 When the user says they're done, find the exported plan:
 1. Check `~/Downloads/scenario_plan.json`
@@ -90,7 +154,7 @@ Read the plan and acknowledge changes:
 
 If the user marked ambiguities as in-scope, generate additional scenarios covering them and ask for quick confirmation.
 
-#### Phase 4 — Write & Run
+### Phase 4 — Write & Run
 
 Write the finalized scenarios to `evals/evals.json`. Map fields:
 - `confirmed_scenarios[].prompt` → `evals[].prompt`
@@ -105,7 +169,9 @@ npx snapeval capture <skill-path>
 
 Report results: how many scenarios captured, total cost, location of snapshots.
 
-### check (regression detection)
+---
+
+## Quick Check (regression detection)
 
 1. Run: `npx snapeval check <skill-path>`
 2. Parse the terminal output
@@ -117,7 +183,9 @@ Report results: how many scenarios captured, total cost, location of snapshots.
    - Fix the skill and re-check
    - Run `@snapeval approve` to accept new behavior
 
-### review (visual review)
+---
+
+## Review (visual review)
 
 After running check, generate a visual report and open it:
 1. Run: `npx snapeval review <skill-path>`
@@ -128,11 +196,15 @@ After running check, generate a visual report and open it:
    - Fix the skill and re-review
    - Run `@snapeval approve` to accept new behavior
 
-### approve
+---
+
+## Approve
 
 1. Run: `npx snapeval approve --scenario <N>` (or without --scenario for all)
 2. Confirm what was approved
 3. Remind user to commit the updated snapshots
+
+---
 
 ## Prompt Realism
 
@@ -156,3 +228,4 @@ Vary style across scenarios: some terse, some with backstory, some with typos or
 - Report costs prominently (should be $0.00 for Copilot gpt-5-mini)
 - When reporting regressions, explain what changed in plain language
 - The ideation viewer and eval viewer are separate tools for separate stages — don't confuse them
+- Quick Onboard is for getting started fast — if users want thorough coverage, guide them to Full Ideation
