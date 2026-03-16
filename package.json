@@ -18,6 +18,7 @@
     "ai-skills",
     "snapshot-testing",
     "copilot-cli",
+    "copilot-sdk",
     "agentskills",
     "evaluation",
     "semantic-testing"
@@ -45,6 +46,14 @@
   "dependencies": {
     "chalk": "^5.4.1",
     "commander": "^14.0.3"
+  },
+  "peerDependencies": {
+    "@github/copilot-sdk": "~0.1.0"
+  },
+  "peerDependenciesMeta": {
+    "@github/copilot-sdk": {
+      "optional": true
+    }
   },
   "devDependencies": {
     "@types/node": "^25.5.0",

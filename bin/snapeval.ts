@@ -3,6 +3,7 @@ import { Command } from 'commander';
 import { resolveConfig } from '../src/config.js';
 import { resolveInference } from '../src/adapters/inference/resolve.js';
 import { CopilotCLIAdapter } from '../src/adapters/skill/copilot-cli.js';
+import { CopilotSDKAdapter } from '../src/adapters/skill/copilot-sdk.js';
 import { TerminalReporter } from '../src/adapters/report/terminal.js';
 import { initCommand } from '../src/commands/init.js';
 import { captureCommand } from '../src/commands/capture.js';
@@ -254,8 +255,11 @@ function resolveSkillAdapter(adapterName: string) {
   if (adapterName === 'copilot-cli') {
     return new CopilotCLIAdapter();
   }
+  if (adapterName === 'copilot-sdk') {
+    return new CopilotSDKAdapter();
+  }
   throw new SnapevalError(
-    `Unknown skill adapter "${adapterName}". Valid options: copilot-cli.`
+    `Unknown skill adapter "${adapterName}". Valid options: copilot-cli, copilot-sdk.`
   );
 }
 

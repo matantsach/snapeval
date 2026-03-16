@@ -4,6 +4,11 @@ import { AdapterNotAvailableError } from '../../src/errors.js';
 const mockExecFileSync = vi.fn();
 vi.mock('node:child_process', () => ({ execFileSync: mockExecFileSync }));
 
+const mockIsSDKInstalled = vi.fn().mockReturnValue(false);
+vi.mock('../../src/adapters/copilot-sdk-client.js', () => ({
+  isSDKInstalled: (...args: any[]) => mockIsSDKInstalled(...args),
+}));
+
 const { resolveInference } = await import('../../src/adapters/inference/resolve.js');
 
 function withEnv(key: string, value: string | undefined, fn: () => void): void {
@@ -95,6 +100,38 @@ describe('resolveInference', () => {
       withEnv('GITHUB_TOKEN', undefined, () => {
         expect(() => resolveInference('github-models')).toThrow(AdapterNotAvailableError);
       });
+    });
+  });
+
+  describe('preference: "copilot-sdk"', () => {
+    it('returns CopilotSDKInference when SDK is installed', () => {
+      mockIsSDKInstalled.mockReturnValue(true);
+      withEnv('GITHUB_TOKEN', undefined, () => {
+        const adapter = resolveInference('copilot-sdk');
+        expect(adapter.name).toBe('copilot-sdk');
+      });
+    });
+
+    it('returns CopilotSDKInference with GitHubModels fallback when GITHUB_TOKEN also set', () => {
+      mockIsSDKInstalled.mockReturnValue(true);
+      withEnv('GITHUB_TOKEN', 'test-token', () => {
+        const adapter = resolveInference('copilot-sdk');
+        expect(adapter.name).toBe('copilot-sdk');
+      });
+    });
+
+    it('throws AdapterNotAvailableError when SDK is not installed', () => {
+      mockIsSDKInstalled.mockReturnValue(false);
+      expect(() => resolveInference('copilot-sdk')).toThrow(AdapterNotAvailableError);
+    });
+
+    it('error message mentions @github/copilot-sdk', () => {
+      mockIsSDKInstalled.mockReturnValue(false);
+      try {
+        resolveInference('copilot-sdk');
+      } catch (e) {
+        expect((e as Error).message).toContain('@github/copilot-sdk');
+      }
     });
   });
 
