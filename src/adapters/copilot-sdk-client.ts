@@ -19,6 +19,7 @@ export async function getClient(): Promise<any> {
 
   let sdk: any;
   try {
+    // @ts-ignore — module may not be installed (optional peer dep)
     sdk = await import('@github/copilot-sdk');
   } catch {
     throw new Error(
