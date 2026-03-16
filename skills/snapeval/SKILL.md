@@ -117,13 +117,16 @@ Report results: how many scenarios captured, total cost, location of snapshots.
    - Fix the skill and re-check
    - Run `@snapeval approve` to accept new behavior
 
-### report (visual review)
+### review (visual review)
 
-After running check, generate a visual report:
-1. Run: `npx snapeval report --html <skill-path>`
-2. Tell the user: "Report generated at `<path>/report.html` — open it in your browser to review results side-by-side"
-3. Explain: the viewer shows baseline vs current output, comparison analysis, and benchmark stats
-4. If the user provides feedback (verbally or via exported feedback.json from the viewer), use it to guide skill improvements
+After running check, generate a visual report and open it:
+1. Run: `npx snapeval review <skill-path>`
+2. This runs check, generates an HTML report, and opens it in the browser automatically
+3. Tell the user: "Opening the report in your browser — it shows baseline vs current output with diffs, comparison analysis, and benchmark stats"
+4. If the user provides feedback, use it to guide skill improvements
+5. If regressions found, present options:
+   - Fix the skill and re-review
+   - Run `@snapeval approve` to accept new behavior
 
 ### approve
 

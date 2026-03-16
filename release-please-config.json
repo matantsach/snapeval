@@ -6,7 +6,16 @@
       "bump-patch-for-minor-pre-major": true,
       "extra-files": [
         "plugin.json",
-        ".github/plugin/marketplace.json"
+        {
+          "type": "json",
+          "path": ".github/plugin/marketplace.json",
+          "jsonpath": "$.metadata.version"
+        },
+        {
+          "type": "json",
+          "path": ".github/plugin/marketplace.json",
+          "jsonpath": "$.plugins[0].version"
+        }
       ]
     }
   }
