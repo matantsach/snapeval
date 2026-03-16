@@ -1,0 +1,12 @@
+{
+  "name": "snapeval",
+  "version": "1.4.0",
+  "description": "Semantic snapshot testing for AI skills. Zero assertions. AI-driven. Free inference.",
+  "author": {
+    "name": "Matan Tsach"
+  },
+  "skills": "./skills/",
+  "scripts": [
+    "scripts/snapeval-cli.sh"
+  ]
+}
