@@ -6,13 +6,13 @@
   },
   "metadata": {
     "description": "Plugin marketplace for snapeval — semantic snapshot testing for AI skills",
-    "version": "1.5.0"
+    "version": "1.6.0"
   },
   "plugins": [
     {
       "name": "snapeval",
       "description": "Semantic snapshot testing for AI skills. Zero assertions. AI-driven. Free inference.",
-      "version": "1.5.0",
+      "version": "1.6.0",
       "source": "./"
     }
   ]

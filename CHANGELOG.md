@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.6.0](https://github.com/matantsach/snapeval/compare/snapeval-v1.5.0...snapeval-v1.6.0) (2026-03-17)
+
+
+### Features
+
+* conversational flow redesign ([#26](https://github.com/matantsach/snapeval/issues/26)) ([57f1b18](https://github.com/matantsach/snapeval/commit/57f1b1840f6c98a985a104a42c8d7a497bd14d41))
+
 ## [1.5.0](https://github.com/matantsach/snapeval/compare/snapeval-v1.4.0...snapeval-v1.5.0) (2026-03-16)
 
 
