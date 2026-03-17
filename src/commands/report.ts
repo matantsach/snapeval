@@ -1,5 +1,7 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
+import { execFile } from 'node:child_process';
+import * as os from 'node:os';
 import type { EvalResults } from '../types.js';
 import { JSONReporter } from '../adapters/report/json.js';
 import { TerminalReporter } from '../adapters/report/terminal.js';
@@ -35,6 +37,17 @@ export async function reportCommand(
     await htmlReporter.report(results);
     const reportPath = path.join(iterationDir, 'report.html');
     console.log(`Report written to ${reportPath}`);
+    if (!process.env.CI) {
+      const platform = os.platform();
+      const opener = platform === 'darwin' ? 'open' : platform === 'win32' ? 'cmd' : 'xdg-open';
+      const args = platform === 'win32' ? ['/c', 'start', '', reportPath] : [reportPath];
+      execFile(opener, args, (err) => {
+        if (err) {
+          // Fallback: print path so user can open manually
+          console.log(`Open in browser: ${reportPath}`);
+        }
+      });
+    }
   }
 
   // Print terminal report
