@@ -67,6 +67,7 @@ describe('reviewCommand', () => {
     fs.rmSync(tmpDir, { recursive: true, force: true });
     consoleSpy.mockRestore();
     vi.clearAllMocks();
+    vi.unstubAllEnvs();
   });
 
   it('runs check and generates HTML report', async () => {
@@ -86,6 +87,7 @@ describe('reviewCommand', () => {
   });
 
   it('calls execFile to open browser', async () => {
+    vi.stubEnv('CI', '');
     writeEvalsAndSnapshot(tmpDir);
     const { execFile } = await import('node:child_process');
 

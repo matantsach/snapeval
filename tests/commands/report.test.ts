@@ -48,6 +48,7 @@ describe('reportCommand', () => {
   afterEach(() => {
     fs.rmSync(tmpDir, { recursive: true, force: true });
     consoleSpy.mockRestore();
+    vi.unstubAllEnvs();
   });
 
   it('creates iteration-1 directory with JSON files', async () => {
@@ -83,6 +84,7 @@ describe('reportCommand', () => {
   });
 
   it('auto-opens HTML report in browser when html option is set', async () => {
+    vi.stubEnv('CI', '');
     const { execFile } = await import('node:child_process');
     const execFileMock = vi.mocked(execFile);
     execFileMock.mockClear();
@@ -116,6 +118,5 @@ describe('reportCommand', () => {
     await reportCommand(tmpDir, makeResults(), { verbose: false, html: true });
 
     expect(execFileMock).not.toHaveBeenCalled();
-    vi.unstubAllEnvs();
   });
 });
