@@ -50,7 +50,14 @@ Triggered by: "evaluate", "test", "set up evals", "evaluate my skill"
 
 ### Phase 4 — Run & Report
 
-1. Run: `npx snapeval init <skill-path>`
+1. Write the confirmed scenarios to `<skill-path>/evals/evals.json`:
+   ```json
+   {
+     "skill_name": "<name>",
+     "generated_by": "snapeval",
+     "evals": [{ "id": 1, "prompt": "...", "expected_output": "...", "files": [], "assertions": [] }]
+   }
+   ```
 2. Run: `npx snapeval capture <skill-path>`
 3. Report: "Captured N baselines in X.Xs, cost $0.00. Your skill is now snapshot-protected."
 
