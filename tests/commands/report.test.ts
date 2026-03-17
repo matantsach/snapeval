@@ -5,6 +5,12 @@ import * as path from 'node:path';
 import { reportCommand } from '../../src/commands/report.js';
 import type { EvalResults, ScenarioResult, SkillOutput } from '../../src/types.js';
 
+vi.mock('node:child_process', () => ({
+  execFile: vi.fn((_cmd: string, _args: unknown, _opts: unknown, cb?: (err: null, stdout: string, stderr: string) => void) => {
+    if (cb) cb(null, '', '');
+  }),
+}));
+
 function makeOutput(raw: string): SkillOutput {
   return { raw, metadata: { tokens: 50, durationMs: 200, model: 'copilot', adapter: 'copilot-cli' } };
 }
@@ -74,5 +80,42 @@ describe('reportCommand', () => {
     await reportCommand(tmpDir, makeResults(), { verbose: false });
     const result = await reportCommand(tmpDir, makeResults(), { verbose: false });
     expect(result).toContain('iteration-2');
+  });
+
+  it('auto-opens HTML report in browser when html option is set', async () => {
+    const { execFile } = await import('node:child_process');
+    const execFileMock = vi.mocked(execFile);
+    execFileMock.mockClear();
+
+    await reportCommand(tmpDir, makeResults(), { verbose: false, html: true });
+
+    expect(execFileMock).toHaveBeenCalledTimes(1);
+    const [cmd, args] = execFileMock.mock.calls[0];
+    // macOS uses 'open', Linux uses 'xdg-open', Windows uses 'cmd'
+    expect(['open', 'xdg-open', 'cmd']).toContain(cmd);
+    expect((args as string[])[0]).toContain('report.html');
+  });
+
+  it('does not auto-open browser when html option is not set', async () => {
+    const { execFile } = await import('node:child_process');
+    const execFileMock = vi.mocked(execFile);
+    execFileMock.mockClear();
+
+    await reportCommand(tmpDir, makeResults(), { verbose: false });
+
+    expect(execFileMock).not.toHaveBeenCalled();
+  });
+
+  it('does not auto-open browser when CI env var is set', async () => {
+    vi.stubEnv('CI', 'true');
+
+    const { execFile } = await import('node:child_process');
+    const execFileMock = vi.mocked(execFile);
+    execFileMock.mockClear();
+
+    await reportCommand(tmpDir, makeResults(), { verbose: false, html: true });
+
+    expect(execFileMock).not.toHaveBeenCalled();
+    vi.unstubAllEnvs();
   });
 });
