@@ -83,6 +83,16 @@ export function createEmptyDir(): string {
   return tmpDir;
 }
 
+/**
+ * Return the workspace path for a skill directory.
+ * Must be passed as --workspace flag to CLI adapter since the default
+ * config uses a relative path that resolves differently per CWD.
+ */
+export function getWorkspaceDir(skillDir: string): string {
+  const skillName = path.basename(skillDir);
+  return path.join(path.dirname(skillDir), `${skillName}-workspace`);
+}
+
 export function cleanup(dir: string): void {
   fs.rmSync(dir, { recursive: true, force: true });
 }

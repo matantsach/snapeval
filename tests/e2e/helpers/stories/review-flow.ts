@@ -4,10 +4,12 @@ import { addAssertionsToEvals } from '../fixtures.js';
 export async function reviewFlow(
   adapter: E2ETestAdapter,
   skillDir: string,
-  assertions: string[]
+  assertions: string[],
+  workspace?: string
 ): Promise<{ initResult: E2ERunResult; reviewResult: E2ERunResult }> {
   const initResult = await adapter.run({ command: 'init', skillDir });
   addAssertionsToEvals(skillDir, assertions);
-  const reviewResult = await adapter.run({ command: 'review', skillDir });
+  const flags = workspace ? { workspace } : undefined;
+  const reviewResult = await adapter.run({ command: 'review', skillDir, flags });
   return { initResult, reviewResult };
 }

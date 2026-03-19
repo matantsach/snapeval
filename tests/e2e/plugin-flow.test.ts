@@ -125,7 +125,7 @@ describe.skipIf(!copilotAvailable)('Plugin E2E', () => {
     const skillDir = copyGreeterSkill({ skillMdOnly: true });
     writeMinimalEvals(skillDir);
 
-    await multiIteration(adapter, skillDir, 3);
+    await multiIteration(adapter, skillDir, undefined, 3);
 
     const workspace = findWorkspaceDir(skillDir);
     assertIterationDir(workspace, 1);
