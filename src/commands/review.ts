@@ -1,48 +1,46 @@
 import { execFile } from 'node:child_process';
+import * as fs from 'node:fs';
 import * as path from 'node:path';
 import * as process from 'node:process';
-import type { SkillAdapter, InferenceAdapter } from '../types.js';
-import { checkCommand } from './check.js';
-import { reportCommand } from './report.js';
+import type { Harness, InferenceAdapter, FeedbackData } from '../types.js';
+import { evalCommand } from './eval.js';
+import { TerminalReporter } from '../adapters/report/terminal.js';
 
 export async function reviewCommand(
   skillPath: string,
-  skillAdapter: SkillAdapter,
+  harness: Harness,
   inference: InferenceAdapter,
-  options: { budget: string }
-): Promise<{ iterationDir: string; hasRegressions: boolean }> {
-  const results = await checkCommand(skillPath, skillAdapter, inference, options);
+  options: { workspace?: string; runs?: number; oldSkill?: string; noOpen?: boolean }
+): Promise<void> {
+  const results = await evalCommand(skillPath, harness, inference, options);
 
-  const iterationDir = await reportCommand(skillPath, results, {
-    verbose: true,
-    html: true,
-  });
+  const terminal = new TerminalReporter();
+  await terminal.report(results);
 
-  const reportPath = path.join(iterationDir, 'report.html');
-  openInBrowser(reportPath);
+  // feedback.json template
+  const feedback: FeedbackData = {};
+  for (const run of results.evalRuns) {
+    feedback[`eval-${run.slug}`] = '';
+  }
+  fs.writeFileSync(
+    path.join(results.iterationDir, 'feedback.json'),
+    JSON.stringify(feedback, null, 2)
+  );
 
-  return {
-    iterationDir,
-    hasRegressions: results.summary.regressed > 0,
-  };
+  // Open in browser (placeholder - HTML reporter will be wired later)
+  if (!options.noOpen) {
+    const reportPath = path.join(results.iterationDir, 'benchmark.json');
+    openInBrowser(reportPath);
+  }
 }
 
 function openInBrowser(filePath: string): void {
   const cmd =
-    process.platform === 'darwin'
-      ? 'open'
-      : process.platform === 'win32'
-        ? 'cmd'
-        : 'xdg-open';
-
+    process.platform === 'darwin' ? 'open' :
+    process.platform === 'win32' ? 'cmd' : 'xdg-open';
   const args =
-    process.platform === 'win32'
-      ? ['/c', 'start', '', filePath]
-      : [filePath];
-
+    process.platform === 'win32' ? ['/c', 'start', '', filePath] : [filePath];
   execFile(cmd, args, (err) => {
-    if (err) {
-      console.warn(`Could not open browser: ${err.message}`);
-    }
+    if (err) console.warn(`Could not open browser: ${err.message}`);
   });
 }
