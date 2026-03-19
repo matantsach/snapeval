@@ -2,11 +2,10 @@
   "name": "snapeval",
   "version": "1.6.0",
   "description": "Semantic snapshot testing for AI skills. Zero assertions. AI-driven. Free inference.",
-  "author": "Matan Tsach",
-  "license": "MIT",
-  "skills": [
-    "skills/snapeval"
-  ],
+  "author": {
+    "name": "Matan Tsach"
+  },
+  "skills": "./skills/",
   "scripts": [
     "scripts/snapeval-cli.sh"
   ]

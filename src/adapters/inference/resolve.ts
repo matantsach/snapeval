@@ -3,6 +3,8 @@ import type { InferenceAdapter } from '../../types.js';
 import { AdapterNotAvailableError } from '../../errors.js';
 import { GitHubModelsInference } from './github-models.js';
 import { CopilotInference } from './copilot.js';
+import { CopilotSDKInference } from './copilot-sdk.js';
+import { isSDKInstalled } from '../copilot-sdk-client.js';
 
 function isCopilotAvailable(): boolean {
   try {
@@ -56,8 +58,18 @@ export function resolveInference(preference: string): InferenceAdapter {
     return new GitHubModelsInference();
   }
 
+  if (preference === 'copilot-sdk') {
+    if (!isSDKInstalled()) {
+      throw new AdapterNotAvailableError(
+        'copilot-sdk',
+        '@github/copilot-sdk is not installed. Install with: npm install @github/copilot-sdk'
+      );
+    }
+    return new CopilotSDKInference();
+  }
+
   throw new AdapterNotAvailableError(
     preference,
-    `Unknown inference adapter "${preference}". Valid options: auto, copilot, github-models.`
+    `Unknown inference adapter "${preference}". Valid options: auto, copilot, copilot-sdk, github-models.`
   );
 }

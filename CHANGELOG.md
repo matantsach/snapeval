@@ -1,5 +1,26 @@
 # Changelog
 
+## [1.6.0](https://github.com/matantsach/snapeval/compare/snapeval-v1.5.0...snapeval-v1.6.0) (2026-03-17)
+
+
+### Features
+
+* conversational flow redesign ([#26](https://github.com/matantsach/snapeval/issues/26)) ([57f1b18](https://github.com/matantsach/snapeval/commit/57f1b1840f6c98a985a104a42c8d7a497bd14d41))
+
+## [1.5.0](https://github.com/matantsach/snapeval/compare/snapeval-v1.4.0...snapeval-v1.5.0) (2026-03-16)
+
+
+### Features
+
+* smart routing + consolidate plugin structure ([#24](https://github.com/matantsach/snapeval/issues/24)) ([9fc3f33](https://github.com/matantsach/snapeval/commit/9fc3f33b4014d33be2f3538f9d337d0adffb0873))
+
+## [1.4.0](https://github.com/matantsach/snapeval/compare/snapeval-v1.3.1...snapeval-v1.4.0) (2026-03-16)
+
+
+### Features
+
+* add Copilot SDK adapter for programmatic skill invocation ([#19](https://github.com/matantsach/snapeval/issues/19)) ([3aa688b](https://github.com/matantsach/snapeval/commit/3aa688b44abca93949732f62d933856baa0fdb88))
+
 ## [1.3.1](https://github.com/matantsach/snapeval/compare/snapeval-v1.3.0...snapeval-v1.3.1) (2026-03-15)
 
 

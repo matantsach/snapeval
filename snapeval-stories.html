@@ -1,0 +1,689 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>snapeval — User Stories</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0d1117;--surface:#161b22;--surface2:#1c2333;--border:#30363d;
+  --text:#e6edf3;--muted:#7d8590;--accent:#58a6ff;--accent2:#3fb950;
+  --warn:#d29922;--fail:#f85149;--pass:#3fb950;
+  --r:8px;--font:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+  --mono:'SF Mono','Cascadia Code',Consolas,monospace;
+}
+html,body{height:100%;overflow:hidden}
+body{background:var(--bg);color:var(--text);font:14px/1.6 var(--font);display:flex}
+
+/* Sidebar */
+.sidebar{width:260px;min-width:260px;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;padding:20px 0}
+.sidebar h1{font-size:15px;font-weight:700;padding:0 20px 16px;color:var(--accent);letter-spacing:-.02em}
+.sidebar h1 span{color:var(--muted);font-weight:400}
+.story-btn{display:flex;align-items:flex-start;gap:12px;padding:14px 20px;border:none;background:none;cursor:pointer;text-align:left;color:var(--muted);transition:all .2s;width:100%;border-left:3px solid transparent}
+.story-btn:hover{background:var(--surface2);color:var(--text)}
+.story-btn.active{background:var(--surface2);color:var(--text);border-left-color:var(--accent)}
+.story-btn .num{width:28px;height:28px;border-radius:50%;background:var(--border);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0;transition:all .2s}
+.story-btn.active .num{background:var(--accent);color:var(--bg)}
+.story-btn .info{flex:1}
+.story-btn .title{font-size:13px;font-weight:600;line-height:1.3}
+.story-btn .desc{font-size:11px;margin-top:2px;opacity:.7}
+.sidebar-footer{margin-top:auto;padding:16px 20px;border-top:1px solid var(--border);font-size:11px;color:var(--muted)}
+
+/* Main */
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden}
+
+/* Step nav */
+.step-nav{display:flex;align-items:center;gap:12px;padding:16px 24px;background:var(--surface);border-bottom:1px solid var(--border)}
+.step-nav button{width:32px;height:32px;border-radius:50%;border:1px solid var(--border);background:var(--surface2);color:var(--text);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:16px;transition:all .15s}
+.step-nav button:hover:not(:disabled){background:var(--accent);border-color:var(--accent);color:var(--bg)}
+.step-nav button:disabled{opacity:.3;cursor:default}
+.step-dots{display:flex;gap:6px;flex:1;justify-content:center}
+.dot{width:10px;height:10px;border-radius:50%;background:var(--border);cursor:pointer;transition:all .25s}
+.dot.active{background:var(--accent);transform:scale(1.3)}
+.dot.done{background:var(--accent);opacity:.5}
+.step-label{font-size:12px;color:var(--muted);min-width:80px;text-align:right}
+
+/* Content area */
+.content{flex:1;display:grid;grid-template-columns:1fr 320px;gap:0;overflow:hidden}
+
+/* Step panel */
+.step-panel{padding:32px;overflow-y:auto}
+.step-type{font-size:11px;text-transform:uppercase;letter-spacing:.08em;font-weight:700;margin-bottom:8px}
+.step-type.cmd{color:var(--accent)}
+.step-type.user{color:var(--warn)}
+.step-type.result{color:var(--pass)}
+.step-title{font-size:22px;font-weight:700;letter-spacing:-.02em;margin-bottom:6px}
+.step-desc{color:var(--muted);font-size:14px;margin-bottom:24px;max-width:600px;line-height:1.7}
+
+.cmd-block{background:#0d1117;border:1px solid var(--border);border-radius:var(--r);padding:14px 18px;font-family:var(--mono);font-size:13px;color:var(--accent);margin-bottom:20px;position:relative;overflow:hidden}
+.cmd-block .prompt-char{color:var(--pass);margin-right:8px}
+
+.artifact{background:var(--surface2);border:1px solid var(--border);border-radius:var(--r);margin-bottom:16px;overflow:hidden;animation:slideUp .4s ease}
+.artifact-header{padding:10px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;font-size:12px}
+.artifact-header .icon{font-size:14px}
+.artifact-header .name{font-family:var(--mono);font-weight:600;color:var(--text)}
+.artifact-header .badge{font-size:10px;padding:2px 8px;border-radius:9999px;font-weight:600}
+.badge-new{background:rgba(63,185,80,.15);color:var(--pass)}
+.badge-modified{background:rgba(210,153,34,.15);color:var(--warn)}
+.artifact-body{padding:14px;font-family:var(--mono);font-size:12px;line-height:1.7;color:var(--muted);max-height:280px;overflow-y:auto;white-space:pre-wrap}
+.artifact-body .key{color:var(--accent)}
+.artifact-body .str{color:var(--pass)}
+.artifact-body .num{color:var(--warn)}
+.artifact-body .bool-true{color:var(--pass)}
+.artifact-body .bool-false{color:var(--fail)}
+
+/* File tree */
+.tree-panel{background:var(--surface);border-left:1px solid var(--border);padding:20px;overflow-y:auto}
+.tree-panel h3{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:16px;font-weight:600}
+.tree{font-family:var(--mono);font-size:12px;line-height:2}
+.tree-item{display:flex;align-items:center;gap:6px;padding:1px 0;white-space:nowrap;transition:all .3s}
+.tree-item.new{animation:fadeHighlight 1s ease}
+.tree-icon{width:16px;text-align:center;flex-shrink:0;font-size:13px}
+.tree-name{color:var(--muted)}
+.tree-item.dir .tree-name{color:var(--text);font-weight:500}
+.tree-item.new .tree-name{color:var(--pass)}
+.tree-item.highlight .tree-name{color:var(--accent);font-weight:600}
+.indent-1{padding-left:16px}
+.indent-2{padding-left:32px}
+.indent-3{padding-left:48px}
+.indent-4{padding-left:64px}
+
+/* Metric cards */
+.metrics{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:20px}
+.metric{background:var(--surface2);border:1px solid var(--border);border-radius:var(--r);padding:16px;text-align:center}
+.metric-value{font-size:28px;font-weight:800;letter-spacing:-.03em}
+.metric-label{font-size:11px;color:var(--muted);margin-top:4px;text-transform:uppercase;letter-spacing:.05em}
+.metric-value.pass{color:var(--pass)}
+.metric-value.fail{color:var(--fail)}
+.metric-value.accent{color:var(--accent)}
+.metric-value.warn{color:var(--warn)}
+
+/* Delta bar */
+.delta-bar{height:8px;border-radius:4px;background:var(--border);margin:8px 0;overflow:hidden;position:relative}
+.delta-fill{height:100%;border-radius:4px;transition:width .8s ease}
+.delta-fill.pass{background:var(--pass)}
+.delta-fill.warn{background:var(--warn)}
+
+@keyframes slideUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+@keyframes fadeHighlight{0%{background:rgba(88,166,255,.15)}100%{background:transparent}}
+</style>
+</head>
+<body>
+
+<div class="sidebar">
+  <h1>snapeval <span>stories</span></h1>
+  <button class="story-btn active" onclick="switchStory(0)">
+    <div class="num">1</div>
+    <div class="info">
+      <div class="title">First-Time Eval Setup</div>
+      <div class="desc">Build evals from scratch for a new skill</div>
+    </div>
+  </button>
+  <button class="story-btn" onclick="switchStory(1)">
+    <div class="num">2</div>
+    <div class="info">
+      <div class="title">Iterating on a Skill</div>
+      <div class="desc">Improve pass rate from 50% to 75%</div>
+    </div>
+  </button>
+  <div class="sidebar-footer">agentskills.io evaluation spec</div>
+</div>
+
+<div class="main">
+  <div class="step-nav">
+    <button id="prev-btn" onclick="prevStep()">&#8592;</button>
+    <div class="step-dots" id="dots"></div>
+    <button id="next-btn" onclick="nextStep()">&#8594;</button>
+    <div class="step-label" id="step-label"></div>
+  </div>
+  <div class="content">
+    <div class="step-panel" id="step-panel"></div>
+    <div class="tree-panel">
+      <h3>Workspace</h3>
+      <div class="tree" id="tree"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+const stories = [
+  // Story 1: First-Time Eval Setup
+  {
+    name: "First-Time Eval Setup",
+    steps: [
+      {
+        type: "cmd", typeLabel: "Command",
+        title: "Generate test cases",
+        desc: "Run snapeval init to have AI analyze your SKILL.md and generate realistic test prompts. No assertions yet \u2014 those come after you see the first outputs.",
+        cmd: "snapeval init ./csv-analyzer",
+        artifacts: [
+          {
+            name: "evals/evals.json", badge: "new",
+            content: `{
+  <span class="key">"skill_name"</span>: <span class="str">"csv-analyzer"</span>,
+  <span class="key">"evals"</span>: [
+    {
+      <span class="key">"id"</span>: <span class="num">1</span>,
+      <span class="key">"prompt"</span>: <span class="str">"I have a CSV of monthly sales data in data/sales_2025.csv. Can you find the top 3 months by revenue and make a bar chart?"</span>,
+      <span class="key">"expected_output"</span>: <span class="str">"A bar chart image showing the top 3 months by revenue, with labeled axes and values."</span>,
+      <span class="key">"slug"</span>: <span class="str">"top-months-chart"</span>
+    },
+    {
+      <span class="key">"id"</span>: <span class="num">2</span>,
+      <span class="key">"prompt"</span>: <span class="str">"there's a csv in my downloads called customers.csv, some rows have missing emails \u2014 can you clean it up?"</span>,
+      <span class="key">"expected_output"</span>: <span class="str">"A cleaned CSV with missing emails handled, plus a count of how many were missing."</span>,
+      <span class="key">"slug"</span>: <span class="str">"clean-missing-emails"</span>
+    }
+  ]
+}`
+          }
+        ],
+        tree: [
+          {dir:true, name:"csv-analyzer/", indent:0},
+          {name:"SKILL.md", indent:1},
+          {dir:true, name:"evals/", indent:1},
+          {name:"evals.json", indent:2, new:true},
+        ]
+      },
+      {
+        type: "user", typeLabel: "User Action",
+        title: "Review & add input files",
+        desc: "Review the generated test cases. Edit prompts for realism, add input CSV files that the skill will need during evaluation.",
+        artifacts: [
+          {
+            name: "evals/evals.json", badge: "modified",
+            content: `{
+  <span class="key">"skill_name"</span>: <span class="str">"csv-analyzer"</span>,
+  <span class="key">"evals"</span>: [
+    {
+      <span class="key">"id"</span>: <span class="num">1</span>,
+      <span class="key">"prompt"</span>: <span class="str">"I have a CSV of monthly sales data..."</span>,
+      <span class="key">"expected_output"</span>: <span class="str">"A bar chart image..."</span>,
+      <span class="key">"slug"</span>: <span class="str">"top-months-chart"</span>,
+      <span class="key">"files"</span>: [<span class="str">"evals/files/sales_2025.csv"</span>]
+    },
+    ...
+  ]
+}`
+          }
+        ],
+        tree: [
+          {dir:true, name:"csv-analyzer/", indent:0},
+          {name:"SKILL.md", indent:1},
+          {dir:true, name:"evals/", indent:1},
+          {name:"evals.json", indent:2, highlight:true},
+          {dir:true, name:"files/", indent:2, new:true},
+          {name:"sales_2025.csv", indent:3, new:true},
+          {name:"customers.csv", indent:3, new:true},
+        ]
+      },
+      {
+        type: "cmd", typeLabel: "Command",
+        title: "First eval run (no assertions)",
+        desc: "Run each eval case with the skill and without it. This produces outputs and timing data \u2014 but no grading yet since there are no assertions.",
+        cmd: "snapeval eval ./csv-analyzer",
+        artifacts: [
+          {
+            name: "with_skill/timing.json", badge: "new",
+            content: `{
+  <span class="key">"total_tokens"</span>: <span class="num">84852</span>,
+  <span class="key">"duration_ms"</span>: <span class="num">23332</span>
+}`
+          },
+          {
+            name: "without_skill/timing.json", badge: "new",
+            content: `{
+  <span class="key">"total_tokens"</span>: <span class="num">41200</span>,
+  <span class="key">"duration_ms"</span>: <span class="num">12100</span>
+}`
+          }
+        ],
+        tree: [
+          {dir:true, name:"csv-analyzer/", indent:0},
+          {name:"SKILL.md", indent:1},
+          {dir:true, name:"evals/", indent:1},
+          {name:"evals.json", indent:2},
+          {dir:true, name:"csv-analyzer-workspace/", indent:0, new:true},
+          {dir:true, name:"iteration-1/", indent:1, new:true},
+          {dir:true, name:"eval-top-months-chart/", indent:2, new:true},
+          {dir:true, name:"with_skill/", indent:3, new:true},
+          {name:"outputs/  timing.json", indent:4, new:true},
+          {dir:true, name:"without_skill/", indent:3, new:true},
+          {name:"outputs/  timing.json", indent:4, new:true},
+          {dir:true, name:"eval-clean-missing-emails/", indent:2, new:true},
+          {name:"\u2026", indent:3, new:true},
+        ]
+      },
+      {
+        type: "user", typeLabel: "User Action",
+        title: "Write assertions",
+        desc: "After reviewing the first outputs, add assertions to evals.json. Use natural language for semantic checks, or script: prefix for mechanical checks.",
+        artifacts: [
+          {
+            name: "evals/evals.json", badge: "modified",
+            content: `    {
+      <span class="key">"id"</span>: <span class="num">1</span>,
+      <span class="key">"prompt"</span>: <span class="str">"I have a CSV of monthly sales..."</span>,
+      <span class="key">"expected_output"</span>: <span class="str">"A bar chart image..."</span>,
+      <span class="key">"slug"</span>: <span class="str">"top-months-chart"</span>,
+      <span class="key">"files"</span>: [<span class="str">"evals/files/sales_2025.csv"</span>],
+      <span class="key">"assertions"</span>: [
+        <span class="str">"The output includes a bar chart image file"</span>,
+        <span class="str">"The chart shows exactly 3 months"</span>,
+        <span class="str">"Both axes are labeled"</span>,
+        <span class="str">"script:verify-chart.sh"</span>
+      ]
+    }`
+          }
+        ],
+        tree: [
+          {dir:true, name:"csv-analyzer/", indent:0},
+          {name:"SKILL.md", indent:1},
+          {dir:true, name:"evals/", indent:1},
+          {name:"evals.json", indent:2, highlight:true},
+          {dir:true, name:"scripts/", indent:2, new:true},
+          {name:"verify-chart.sh", indent:3, new:true},
+        ]
+      },
+      {
+        type: "cmd", typeLabel: "Command",
+        title: "Second eval (with grading)",
+        desc: "Now assertions are graded \u2014 LLM evaluates semantic checks, scripts handle mechanical checks. Each assertion gets PASS/FAIL with evidence.",
+        cmd: "snapeval eval ./csv-analyzer",
+        artifacts: [
+          {
+            name: "with_skill/grading.json", badge: "new",
+            content: `{
+  <span class="key">"assertion_results"</span>: [
+    { <span class="key">"text"</span>: <span class="str">"The output includes a bar chart"</span>,
+      <span class="key">"passed"</span>: <span class="bool-true">true</span>,
+      <span class="key">"evidence"</span>: <span class="str">"Found chart.png (45KB)"</span> },
+    { <span class="key">"text"</span>: <span class="str">"Both axes are labeled"</span>,
+      <span class="key">"passed"</span>: <span class="bool-false">false</span>,
+      <span class="key">"evidence"</span>: <span class="str">"Y-axis labeled but X-axis has no label"</span> }
+  ],
+  <span class="key">"summary"</span>: {
+    <span class="key">"passed"</span>: <span class="num">3</span>, <span class="key">"failed"</span>: <span class="num">1</span>,
+    <span class="key">"total"</span>: <span class="num">4</span>, <span class="key">"pass_rate"</span>: <span class="num">0.75</span>
+  }
+}`
+          },
+          {
+            name: "benchmark.json", badge: "new",
+            content: `{
+  <span class="key">"run_summary"</span>: {
+    <span class="key">"with_skill"</span>: {
+      <span class="key">"pass_rate"</span>: { <span class="key">"mean"</span>: <span class="num">0.75</span>, <span class="key">"stddev"</span>: <span class="num">0.06</span> }
+    },
+    <span class="key">"without_skill"</span>: {
+      <span class="key">"pass_rate"</span>: { <span class="key">"mean"</span>: <span class="num">0.25</span>, <span class="key">"stddev"</span>: <span class="num">0.10</span> }
+    },
+    <span class="key">"delta"</span>: {
+      <span class="key">"pass_rate"</span>: <span class="num">0.50</span>,
+      <span class="key">"time_seconds"</span>: <span class="num">13.0</span>,
+      <span class="key">"tokens"</span>: <span class="num">1700</span>
+    }
+  }
+}`
+          }
+        ],
+        metrics: [
+          {value: "75%", label: "With Skill", cls: "pass"},
+          {value: "25%", label: "Without Skill", cls: "fail"},
+          {value: "+50%", label: "Delta", cls: "accent"},
+          {value: "13s", label: "Extra Time", cls: "warn"},
+        ],
+        tree: [
+          {dir:true, name:"csv-analyzer-workspace/", indent:0},
+          {dir:true, name:"iteration-2/", indent:1, new:true},
+          {dir:true, name:"eval-top-months-chart/", indent:2},
+          {dir:true, name:"with_skill/", indent:3},
+          {name:"outputs/  timing.json", indent:4},
+          {name:"grading.json", indent:4, new:true},
+          {dir:true, name:"without_skill/", indent:3},
+          {name:"outputs/  timing.json", indent:4},
+          {name:"grading.json", indent:4, new:true},
+          {name:"benchmark.json", indent:2, new:true},
+        ]
+      },
+      {
+        type: "cmd", typeLabel: "Command",
+        title: "Review with HTML report",
+        desc: "Generate an interactive HTML report showing side-by-side outputs, assertion results, and benchmark delta. A feedback.json template is created for your notes.",
+        cmd: "snapeval review ./csv-analyzer",
+        artifacts: [
+          {
+            name: "feedback.json", badge: "new",
+            content: `{
+  <span class="key">"eval-top-months-chart"</span>: <span class="str">""</span>,
+  <span class="key">"eval-clean-missing-emails"</span>: <span class="str">""</span>
+}
+
+<span style="color:var(--muted);font-style:italic">// Fill in your observations:</span>
+{
+  <span class="key">"eval-top-months-chart"</span>: <span class="str">"X-axis missing label. Months in alphabetical order instead of chronological."</span>,
+  <span class="key">"eval-clean-missing-emails"</span>: <span class="str">""</span>
+}`
+          }
+        ],
+        tree: [
+          {dir:true, name:"csv-analyzer-workspace/", indent:0},
+          {dir:true, name:"iteration-2/", indent:1},
+          {dir:true, name:"eval-top-months-chart/", indent:2},
+          {name:"\u2026", indent:3},
+          {dir:true, name:"eval-clean-missing-emails/", indent:2},
+          {name:"\u2026", indent:3},
+          {name:"benchmark.json", indent:2},
+          {name:"feedback.json", indent:2, new:true},
+          {name:"report.html", indent:2, new:true},
+        ]
+      },
+    ]
+  },
+  // Story 2: Iterating on a Skill
+  {
+    name: "Iterating on a Skill",
+    steps: [
+      {
+        type: "result", typeLabel: "Review",
+        title: "Analyze benchmark results",
+        desc: "Iteration 1 showed a +50% pass rate delta. The skill helps \u2014 but 25% of assertions still fail. Let's find out why.",
+        metrics: [
+          {value: "75%", label: "With Skill", cls: "pass"},
+          {value: "25%", label: "Without Skill", cls: "fail"},
+          {value: "+50%", label: "Pass Rate Delta", cls: "accent"},
+          {value: "4/8", label: "Assertions Failed", cls: "warn"},
+        ],
+        artifacts: [
+          {
+            name: "benchmark.json (iteration-1)", badge: "",
+            content: `<span class="key">"delta"</span>: {
+  <span class="key">"pass_rate"</span>: <span class="num">0.50</span>     <span style="color:var(--muted)">\u2190 skill adds 50% value</span>
+  <span class="key">"time_seconds"</span>: <span class="num">13.0</span>  <span style="color:var(--muted)">\u2190 costs 13s more</span>
+  <span class="key">"tokens"</span>: <span class="num">1700</span>        <span style="color:var(--muted)">\u2190 uses 1700 more tokens</span>
+}
+
+<span style="color:var(--muted)">Pattern analysis:</span>
+<span style="color:var(--pass)">\u25cf</span> "Includes a chart" \u2014 always passes (not differentiating)
+<span style="color:var(--accent)">\u25cf</span> "Axes are labeled" \u2014 passes w/ skill, fails without
+<span style="color:var(--fail)">\u25cf</span> "Chronological order" \u2014 always fails (broken assertion?)`
+          }
+        ],
+        tree: [
+          {dir:true, name:"csv-analyzer-workspace/", indent:0},
+          {dir:true, name:"iteration-1/", indent:1},
+          {name:"benchmark.json", indent:2, highlight:true},
+          {name:"feedback.json", indent:2},
+        ]
+      },
+      {
+        type: "user", typeLabel: "User Action",
+        title: "Write human feedback",
+        desc: "Fill in feedback.json with specific observations the assertions didn't catch. Focus on what was wrong, not just that it failed.",
+        artifacts: [
+          {
+            name: "feedback.json", badge: "modified",
+            content: `{
+  <span class="key">"eval-top-months-chart"</span>: <span class="str">"X-axis missing label. Months are in alphabetical order instead of chronological. Chart title is generic."</span>,
+  <span class="key">"eval-clean-missing-emails"</span>: <span class="str">"Counted nulls but not empty strings. Output CSV still has trailing whitespace."</span>
+}`
+          }
+        ],
+        tree: [
+          {dir:true, name:"csv-analyzer-workspace/", indent:0},
+          {dir:true, name:"iteration-1/", indent:1},
+          {name:"benchmark.json", indent:2},
+          {name:"feedback.json", indent:2, highlight:true},
+        ]
+      },
+      {
+        type: "user", typeLabel: "LLM-Assisted",
+        title: "Generate SKILL.md improvements",
+        desc: "Feed three signal sources to an LLM: failed assertions (grading.json), human feedback, and execution transcripts. Ask it to propose SKILL.md changes.",
+        artifacts: [
+          {
+            name: "LLM prompt (you write this)", badge: "",
+            content: `Here is my current SKILL.md, the failed assertion
+results from grading.json, and my human feedback.
+
+<span style="color:var(--muted)">Failed assertions:</span>
+<span style="color:var(--fail)">\u2717</span> "Both axes are labeled" \u2014 X-axis had no label
+<span style="color:var(--fail)">\u2717</span> "Chronological order" \u2014 months were alphabetical
+<span style="color:var(--fail)">\u2717</span> "Count includes empty strings" \u2014 only counted nulls
+
+<span style="color:var(--muted)">Human feedback:</span>
+"Months alphabetical instead of chronological"
+"Output CSV still has trailing whitespace"
+
+<span style="color:var(--accent)">Propose improvements to SKILL.md that address
+these issues broadly, not just for these test cases.</span>`
+          }
+        ],
+        tree: [
+          {dir:true, name:"csv-analyzer/", indent:0},
+          {name:"SKILL.md", indent:1, highlight:true},
+          {dir:true, name:"evals/", indent:1},
+          {name:"evals.json", indent:2},
+          {dir:true, name:"csv-analyzer-workspace/", indent:0},
+          {dir:true, name:"iteration-1/", indent:1},
+          {name:"grading.json (per eval)", indent:2, highlight:true},
+          {name:"feedback.json", indent:2, highlight:true},
+        ]
+      },
+      {
+        type: "user", typeLabel: "User Action",
+        title: "Apply SKILL.md changes",
+        desc: "Review the LLM's suggestions. Apply the ones that make sense \u2014 generalizing from specific failures to broader instructions.",
+        artifacts: [
+          {
+            name: "SKILL.md (diff)", badge: "modified",
+            content: `<span style="color:var(--muted)">  ## Chart generation</span>
+
+<span style="color:var(--pass)">+ Always label both axes with descriptive names.</span>
+<span style="color:var(--pass)">+ Sort time-based data chronologically, not</span>
+<span style="color:var(--pass)">+ alphabetically. Explain the why: "readers expect</span>
+<span style="color:var(--pass)">+ temporal data in time order."</span>
+
+<span style="color:var(--muted)">  ## Data cleaning</span>
+
+<span style="color:var(--pass)">+ Treat empty strings the same as null/undefined</span>
+<span style="color:var(--pass)">+ when counting missing values. Trim whitespace</span>
+<span style="color:var(--pass)">+ from all string fields before writing output.</span>`
+          }
+        ],
+        tree: [
+          {dir:true, name:"csv-analyzer/", indent:0},
+          {name:"SKILL.md", indent:1, highlight:true},
+          {dir:true, name:"evals/", indent:1},
+          {name:"evals.json", indent:2},
+        ]
+      },
+      {
+        type: "cmd", typeLabel: "Command",
+        title: "Re-evaluate (iteration 2)",
+        desc: "Run the eval again. A new iteration-2/ directory is created. Compare the new benchmark against iteration-1.",
+        cmd: "snapeval eval ./csv-analyzer",
+        metrics: [
+          {value: "88%", label: "With Skill", cls: "pass"},
+          {value: "13%", label: "Without Skill", cls: "fail"},
+          {value: "+75%", label: "Pass Rate Delta", cls: "accent"},
+          {value: "+25%", label: "Improvement", cls: "pass"},
+        ],
+        artifacts: [
+          {
+            name: "benchmark.json (iteration-2)", badge: "new",
+            content: `{
+  <span class="key">"run_summary"</span>: {
+    <span class="key">"with_skill"</span>: {
+      <span class="key">"pass_rate"</span>: { <span class="key">"mean"</span>: <span class="num">0.88</span>, <span class="key">"stddev"</span>: <span class="num">0.04</span> }
+    },
+    <span class="key">"without_skill"</span>: {
+      <span class="key">"pass_rate"</span>: { <span class="key">"mean"</span>: <span class="num">0.13</span>, <span class="key">"stddev"</span>: <span class="num">0.08</span> }
+    },
+    <span class="key">"delta"</span>: {
+      <span class="key">"pass_rate"</span>: <span class="num">0.75</span>,
+      <span class="key">"time_seconds"</span>: <span class="num">11.0</span>,
+      <span class="key">"tokens"</span>: <span class="num">1400</span>
+    }
+  }
+}`
+          }
+        ],
+        tree: [
+          {dir:true, name:"csv-analyzer-workspace/", indent:0},
+          {dir:true, name:"iteration-1/", indent:1},
+          {name:"\u2026", indent:2},
+          {dir:true, name:"iteration-2/", indent:1, new:true},
+          {dir:true, name:"eval-top-months-chart/", indent:2, new:true},
+          {name:"with_skill/  without_skill/", indent:3, new:true},
+          {dir:true, name:"eval-clean-missing-emails/", indent:2, new:true},
+          {name:"with_skill/  without_skill/", indent:3, new:true},
+          {name:"benchmark.json", indent:2, new:true},
+        ]
+      },
+      {
+        type: "result", typeLabel: "Result",
+        title: "Iteration comparison",
+        desc: "Pass rate delta improved from +50% to +75%. The skill is more effective AND slightly faster (fewer wasted tokens from confused output).",
+        artifacts: [
+          {
+            name: "Progress", badge: "",
+            content: `<span style="color:var(--muted)">Iteration 1:</span>
+  with_skill:    <span class="num">75%</span>   without_skill: <span class="num">25%</span>   delta: <span class="num">+50%</span>
+  time: +13s   tokens: +1700
+
+<span style="color:var(--muted)">Iteration 2:</span>
+  with_skill:    <span class="num">88%</span>   without_skill: <span class="num">13%</span>   delta: <span class="num">+75%</span>
+  time: +11s   tokens: +1400
+
+<span style="color:var(--pass)">\u2714 Pass rate delta: +50% \u2192 +75%  (+25% improvement)</span>
+<span style="color:var(--pass)">\u2714 Time cost:       13s \u2192 11s   (faster)</span>
+<span style="color:var(--pass)">\u2714 Token cost:      1700 \u2192 1400 (cheaper)</span>
+
+<span style="color:var(--muted)">Next: review remaining failures, iterate again,
+or stop if feedback is consistently empty.</span>`
+          }
+        ],
+        metrics: [
+          {value: "+50%", label: "Iteration 1 Delta", cls: "warn"},
+          {value: "+75%", label: "Iteration 2 Delta", cls: "pass"},
+        ],
+        deltaBar: { from: 50, to: 75 },
+        tree: [
+          {dir:true, name:"csv-analyzer-workspace/", indent:0},
+          {dir:true, name:"iteration-1/", indent:1},
+          {name:"benchmark.json", indent:2},
+          {dir:true, name:"iteration-2/", indent:1},
+          {name:"benchmark.json", indent:2, highlight:true},
+        ]
+      },
+    ]
+  }
+];
+
+let currentStory = 0;
+let currentStep = 0;
+
+function switchStory(idx) {
+  currentStory = idx;
+  currentStep = 0;
+  document.querySelectorAll('.story-btn').forEach((b, i) => b.classList.toggle('active', i === idx));
+  render();
+}
+
+function prevStep() { if (currentStep > 0) { currentStep--; render(); } }
+function nextStep() { if (currentStep < stories[currentStory].steps.length - 1) { currentStep++; render(); } }
+
+function render() {
+  const story = stories[currentStory];
+  const step = story.steps[currentStep];
+  const total = story.steps.length;
+
+  // Dots
+  const dotsEl = document.getElementById('dots');
+  dotsEl.innerHTML = '';
+  for (let i = 0; i < total; i++) {
+    const d = document.createElement('div');
+    d.className = 'dot' + (i === currentStep ? ' active' : i < currentStep ? ' done' : '');
+    d.onclick = () => { currentStep = i; render(); };
+    dotsEl.appendChild(d);
+  }
+
+  // Nav buttons
+  document.getElementById('prev-btn').disabled = currentStep === 0;
+  document.getElementById('next-btn').disabled = currentStep === total - 1;
+  document.getElementById('step-label').textContent = `${currentStep + 1} / ${total}`;
+
+  // Step panel
+  const panel = document.getElementById('step-panel');
+  let html = `<div class="step-type ${step.type}">${step.typeLabel}</div>`;
+  html += `<div class="step-title">${step.title}</div>`;
+  html += `<div class="step-desc">${step.desc}</div>`;
+
+  if (step.cmd) {
+    html += `<div class="cmd-block"><span class="prompt-char">$</span>${esc(step.cmd)}</div>`;
+  }
+
+  if (step.metrics) {
+    html += '<div class="metrics">';
+    for (const m of step.metrics) {
+      html += `<div class="metric"><div class="metric-value ${m.cls}">${m.value}</div><div class="metric-label">${m.label}</div></div>`;
+    }
+    html += '</div>';
+  }
+
+  if (step.deltaBar) {
+    html += `<div style="margin-bottom:20px">
+      <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--muted);margin-bottom:4px">
+        <span>Iteration 1: +${step.deltaBar.from}%</span><span>Iteration 2: +${step.deltaBar.to}%</span>
+      </div>
+      <div class="delta-bar"><div class="delta-fill pass" style="width:${step.deltaBar.to}%"></div></div>
+    </div>`;
+  }
+
+  if (step.artifacts) {
+    for (const a of step.artifacts) {
+      const badgeHtml = a.badge ? `<span class="badge badge-${a.badge}">${a.badge}</span>` : '';
+      html += `<div class="artifact">
+        <div class="artifact-header">
+          <span class="icon">\ud83d\udcc4</span>
+          <span class="name">${esc(a.name)}</span>
+          ${badgeHtml}
+        </div>
+        <div class="artifact-body">${a.content}</div>
+      </div>`;
+    }
+  }
+
+  panel.innerHTML = html;
+
+  // Tree
+  const treeEl = document.getElementById('tree');
+  if (step.tree) {
+    treeEl.innerHTML = step.tree.map(t => {
+      const cls = ['tree-item'];
+      if (t.dir) cls.push('dir');
+      if (t.new) cls.push('new');
+      if (t.highlight) cls.push('highlight');
+      cls.push(`indent-${t.indent}`);
+      const icon = t.dir ? '\ud83d\udcc1' : '\ud83d\udcc4';
+      return `<div class="${cls.join(' ')}"><span class="tree-icon">${icon}</span><span class="tree-name">${esc(t.name)}</span></div>`;
+    }).join('');
+  }
+}
+
+function esc(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+// Keyboard nav
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'ArrowRight' || e.key === 'ArrowDown') { e.preventDefault(); nextStep(); }
+  if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') { e.preventDefault(); prevStep(); }
+  if (e.key === '1') switchStory(0);
+  if (e.key === '2') switchStory(1);
+});
+
+render();
+</script>
+</body>
+</html>

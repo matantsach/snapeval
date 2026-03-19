@@ -16,11 +16,10 @@
   },
   "keywords": [
     "ai-skills",
-    "snapshot-testing",
-    "copilot-cli",
     "agentskills",
     "evaluation",
-    "semantic-testing"
+    "harness",
+    "copilot-cli"
   ],
   "author": "Matan Tsach",
   "license": "MIT",
