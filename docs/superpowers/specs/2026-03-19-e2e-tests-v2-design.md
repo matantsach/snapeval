@@ -4,7 +4,7 @@
 
 The current E2E tests (`tests/e2e/eval-pipeline.test.ts`) mock both adapters (harness and inference). They verify engine orchestration and artifact production but never invoke a real harness or real LLM. They're integration tests labeled as E2E.
 
-Additionally, tests verify isolated phases rather than connected user journeys. A user doesn't run "gradeAssertions with a mock inference" — they run `snapeval init`, review generated evals, add assertions, run `snapeval capture`, then `snapeval check`. None of that flow is tested end-to-end.
+Additionally, tests verify isolated phases rather than connected user journeys. A user doesn't run "gradeAssertions with a mock inference" — they run `snapeval init`, review generated evals, add assertions, then run `snapeval eval` to get a benchmark. None of that flow is tested end-to-end.
 
 The project has three invocation surfaces — direct CLI, Copilot plugin, and Copilot SDK — each needing coverage. A fourth (Claude Code) is anticipated.
 
@@ -23,11 +23,37 @@ This spec supersedes:
 
 Both are consolidated here under a unified adapter-extensible design.
 
+## Current Architecture
+
+Commands: `init`, `eval`, `review` (defined in `bin/snapeval.ts`).
+
+Artifact model (agentskills.io spec, dual-run benchmarking):
+```
+{workspace}/iteration-N/
+  eval-{slug}/
+    with_skill/
+      outputs/output.txt
+      timing.json          # {total_tokens, duration_ms}
+      grading.json         # {assertion_results[], summary} (if assertions)
+    without_skill/         # (or old_skill/ with --old-skill flag)
+      outputs/output.txt
+      timing.json
+      grading.json
+  benchmark.json           # {run_summary: {with_skill, without_skill, delta}}
+  feedback.json            # {[evalSlug]: ""} (review command only)
+```
+
+Adapter layers:
+- **Harness** (`src/adapters/harness/`) — `Harness` interface with `run()`. Built-in: `CopilotCLIHarness`.
+- **Inference** (`src/adapters/inference/`) — `InferenceAdapter` interface with `chat()`. Used for grading assertions and generating evals. Built-in: `CopilotInference`, `CopilotSDKInference`, `GitHubModelsInference`.
+
 ## Design
 
 ### E2E Test Adapter Contract
 
 Every test surface implements this interface. This is the single extensibility point — adding a new adapter means implementing this contract.
+
+Note: This `E2ETestAdapter` is a **test-layer abstraction** that wraps CLI/plugin/SDK invocations for E2E testing. It is unrelated to the production `Harness` and `InferenceAdapter` interfaces in `src/types.ts`.
 
 ```typescript
 // tests/e2e/helpers/types.ts
@@ -50,7 +76,7 @@ interface E2ETestAdapter {
    * Each adapter translates this into its own invocation method.
    */
   run(options: {
-    command: 'init' | 'capture' | 'check' | 'review' | 'approve';
+    command: 'init' | 'eval' | 'review';
     skillDir: string;
     flags?: Record<string, string>;
   }): Promise<E2ERunResult>;
@@ -67,16 +93,15 @@ interface E2ERunResult {
 
 | Adapter | `run()` implementation | `isAvailable()` check |
 |---------|----------------------|----------------------|
-| `CLIAdapter` | `execFile('npx', ['snapeval', command, skillDir, ...flags])` | `execFileSync('npx', ['snapeval', '--version'])` succeeds |
-| `PluginAdapter` | `execFile('copilot', ['-p', naturalLanguagePrompt, '-s', '--no-ask-user', ...])` | `copilot --version` + `copilot plugin list` includes snapeval |
-| `SDKAdapter` | Creates SDK session, sends prompt via `sendAndWait()`, returns response | `isSDKInstalled()` from `copilot-sdk-client.ts` |
+| `CLIAdapter` | `execFile('npx', ['tsx', 'bin/snapeval.ts', command, skillDir, ...flags])` | `npx tsx bin/snapeval.ts --version` succeeds |
+| `PluginAdapter` | `execFile('copilot', ['-p', naturalLanguagePrompt, '-s', '--no-ask-user', '--allow-all-tools', '--model', 'gpt-4.1'])` | `copilot --version` succeeds + `copilot plugin list` includes snapeval |
+| `SDKAdapter` | Creates SDK session via `getClient()`, sends prompt via `sendAndWait()`, returns response | `isSDKInstalled()` from `copilot-sdk-client.ts` |
 | Future `ClaudeCodeAdapter` | `execFile('claude', ['-p', prompt, '--skill', skillDir, ...])` | `claude --version` succeeds |
 
 The `PluginAdapter` translates structured commands to natural language prompts:
-- `init` → `"Evaluate the skill at {path}. Run all scenarios without asking for confirmation."`
-- `check` → `"Check the skill at {path} for regressions"`
-- `review` → `"Check the skill at {path} and generate an HTML report"`
-- `approve` → `"Approve all scenarios for the skill at {path}"`
+- `init` → `"Generate eval test cases for the skill at {path}. Run without asking for confirmation."`
+- `eval` → `"Run evals for the skill at {path}. Run all evals without asking for confirmation."`
+- `review` → `"Run evals for the skill at {path} and generate a review with feedback template."`
 
 ### User Stories as Reusable Functions
 
@@ -84,72 +109,101 @@ Stories are pure orchestration — they call the adapter and return results. The
 
 ```
 tests/e2e/helpers/stories/
-  evaluate-skill.ts    # US1: init + capture from scratch
-  regression-check.ts  # US2 (pass) + US2b (fail)
-  report-flow.ts       # US3: review with HTML report
-  approve-flow.ts      # US4: approve regressed scenarios
-  error-paths.ts       # US-ERR1 (no SKILL.md) + US-ERR2 (no baselines)
+  generate-evals.ts       # US1: init generates evals.json from SKILL.md
+  eval-with-assertions.ts # US2: full eval pipeline with assertions and benchmark
+  eval-without-assertions.ts # US3: eval with no assertions (timing only, no grading)
+  eval-old-skill.ts       # US4: eval with --old-skill flag for version comparison
+  review-flow.ts          # US5: review produces feedback.json template
+  multi-iteration.ts      # US6: consecutive evals produce iteration-1, iteration-2, ...
+  error-paths.ts          # US-ERR1 (no SKILL.md) + US-ERR2 (no evals.json)
 ```
 
-#### US1: Evaluate Skill (First-Time Setup)
-User has a skill with SKILL.md, no evals, no snapshots. Runs init to generate test scenarios, then capture to establish baselines.
+#### US1: Generate Evals (First-Time Setup)
+User has a skill with SKILL.md only — no evals directory. Runs `snapeval init` to generate test scenarios.
 
-Returns: `{ initResult, captureResult }` — both `E2ERunResult`.
+Returns: `{ initResult: E2ERunResult }`.
 
 **Primary assertions (file artifacts):**
 - `evals/evals.json` created, valid JSON, has `evals` array with ≥1 entry
-- At least one eval contains a greeter-domain keyword (greeting, formal, casual, pirate, greeter)
-- Snapshot files created with `output.raw` (non-empty) and `metadata.adapter`
+- Each eval has `id`, `prompt`, `expected_output`, `slug`
+- At least one eval contains a greeter-domain keyword (greeting, formal, casual, pirate, greeter) — catches garbage generation where AI ignores the target skill
+- No `assertions` field in generated evals (user adds these manually)
 
-#### US2: Regression Check — Pass
-User has a skill with matching baselines. Check should pass.
+#### US2: Full Eval Pipeline (With Assertions)
+User has a skill with SKILL.md and `evals/evals.json` including assertions. Runs `snapeval eval` to get benchmark.
 
-Returns: `E2ERunResult`.
+The story function:
+1. Calls `adapter.run({ command: 'init', skillDir })` to generate evals
+2. Adds assertions to the generated `evals.json` (programmatic file edit)
+3. Calls `adapter.run({ command: 'eval', skillDir })` to run the full pipeline
 
-**Primary assertions:**
-- Skill directory unchanged (no corruption)
-- Stdout contains verdict patterns (`/pass/i`, `/scenario/i`)
+Returns: `{ initResult, evalResult }` — both `E2ERunResult`.
 
-#### US2b: Regression Check — Fail
-Same as US2 but baselines tampered with structurally different content.
+**Primary assertions (file artifacts):**
+- Iteration directory exists: `{workspace}/iteration-1/`
+- For each eval slug, both `with_skill/` and `without_skill/` directories exist
+- `timing.json` per variant with `total_tokens` (number > 0) and `duration_ms` (number > 0)
+- `output.txt` per variant in `outputs/` subdirectory (non-empty)
+- `grading.json` per variant with `assertion_results[]` and `summary` containing `passed`, `failed`, `total`, `pass_rate`
+- `benchmark.json` at iteration level with `run_summary.with_skill`, `run_summary.without_skill`, `run_summary.delta`
 
-Returns: `E2ERunResult`.
+**Secondary assertions (stdout):**
+- Output references the skill name or benchmark results
 
-**Primary assertions:**
-- Stdout mentions regression/regressed
-
-#### US3: Report Flow
-User runs review to get HTML report after a check.
-
-Returns: `E2ERunResult`.
-
-**Primary assertions:**
-- Iteration directory exists
-- `report.html` and `viewer-data.json` exist
-- HTML is non-trivial (> 1KB, contains `<!DOCTYPE html>`)
-
-#### US4: Approve Flow
-User approves regressed scenarios to update baselines.
+#### US3: Eval Without Assertions
+User has evals.json but no assertions field. Only timing artifacts should be produced, no grading.
 
 Returns: `E2ERunResult`.
 
 **Primary assertions:**
-- Snapshot file contents changed (before/after comparison)
-- `.audit-log.jsonl` exists with approval entries
+- `timing.json` written per variant
+- `output.txt` written per variant
+- `grading.json` NOT written (no assertions = no grading)
+- `benchmark.json` written with `pass_rate.mean` of 0
+
+#### US4: Eval With Old Skill Comparison
+User runs eval with `--old-skill <path>` to compare current skill against a previous version instead of no-skill baseline.
+
+Returns: `E2ERunResult`.
+
+**Primary assertions:**
+- `old_skill/` directory created instead of `without_skill/`
+- Both `with_skill/` and `old_skill/` have `timing.json` and `output.txt`
+- `benchmark.json` computed from with_skill vs old_skill comparison
+
+#### US5: Review Flow
+User runs `snapeval review` to get eval results plus a feedback template.
+
+Returns: `E2ERunResult`.
+
+**Primary assertions:**
+- All eval artifacts produced (same as US2)
+- `feedback.json` exists at iteration level with eval slugs as keys and empty string values
+
+#### US6: Multiple Iterations
+User runs `snapeval eval` consecutively. Each run creates a new numbered iteration directory.
+
+The story function runs `adapter.run({ command: 'eval', skillDir })` three times.
+
+Returns: `{ results: E2ERunResult[] }`.
+
+**Primary assertions:**
+- `iteration-1/`, `iteration-2/`, `iteration-3/` all exist
+- Each has its own `benchmark.json`
 
 #### US-ERR1: No SKILL.md
 User points at a directory with no SKILL.md.
 
 **Primary assertions:**
-- No evals or snapshots created
-- Stdout contains error mentioning SKILL.md or "not found"
+- No `evals/` directory created
+- Stdout/stderr contains error mentioning SKILL.md or "not found"
 
-#### US-ERR2: No Baselines
-User runs check on a skill that hasn't been captured yet.
+#### US-ERR2: No evals.json (Eval Without Init)
+User runs `snapeval eval` on a skill that hasn't been initialized yet (no evals.json).
 
 **Primary assertions:**
-- No corrupt state created
-- Stdout explains baselines needed / suggests capture
+- No iteration directory created
+- Stdout/stderr explains that evals.json is needed / suggests running init
 
 ### Shared Assertions
 
@@ -158,16 +212,21 @@ Reusable validators for agentskills.io spec artifacts. Every adapter must produc
 ```typescript
 // tests/e2e/helpers/assertions.ts
 
-assertEvalsJson(skillDir)         // evals.json exists, valid, has entries
-assertEvalsRelevance(skillDir, keywords)  // at least one eval contains domain keyword
-assertSnapshots(skillDir)         // snapshot files with valid structure
-assertBenchmark(skillDir, iteration?)     // benchmark.json with run_summary
-assertGrading(runDir)             // grading.json with assertion_results + summary
-assertTiming(runDir)              // timing.json with total_tokens + duration_ms
-assertFeedback(skillDir, iteration?)      // feedback.json with eval slug keys
-assertReport(skillDir, iteration?)        // report.html non-trivial
-assertCleanState(dir)             // no artifacts created
-assertStdoutContains(result, pattern)     // regex match on stdout
+assertEvalsJson(skillDir)                    // evals/evals.json exists, valid JSON, has evals array with entries
+assertEvalsRelevance(skillDir, keywords)     // at least one eval contains a domain keyword
+assertEvalsNoAssertions(skillDir)            // no assertions field in generated evals
+assertIterationDir(workspace, n)             // iteration-N/ directory exists
+assertDualRunDirs(evalDir)                   // with_skill/ and without_skill/ both exist
+assertOldSkillDir(evalDir)                   // old_skill/ exists instead of without_skill/
+assertTiming(runDir)                         // timing.json with total_tokens (>0) and duration_ms (>0)
+assertOutput(runDir)                         // outputs/output.txt exists and is non-empty
+assertGrading(runDir)                        // grading.json with assertion_results[] and summary
+assertNoGrading(runDir)                      // grading.json does NOT exist
+assertBenchmark(iterationDir)                // benchmark.json with run_summary.{with_skill, without_skill, delta}
+assertFeedback(iterationDir)                 // feedback.json with eval slug keys
+assertCleanState(dir)                        // no evals/, no iteration dirs created
+assertStdoutContains(result, pattern)        // regex match on stdout
+assertStderrContains(result, pattern)        // regex match on stderr
 ```
 
 ### Shared Fixtures
@@ -175,17 +234,23 @@ assertStdoutContains(result, pattern)     // regex match on stdout
 ```typescript
 // tests/e2e/helpers/fixtures.ts
 
+/** Copy test-skills/greeter/ to temp dir. Returns path. */
 copyGreeterSkill(options?: {
-  includeEvals?: boolean;     // default true
-  includeSnapshots?: boolean; // default true
-  skillMdOnly?: boolean;      // just SKILL.md
-}): string                    // returns temp dir path
+  includeEvals?: boolean;     // default true — copies evals/evals.json
+  skillMdOnly?: boolean;      // just SKILL.md, nothing else
+}): string
 
-tamperBaselines(skillDir): void
-recordSnapshotState(skillDir): Map<string, string>
-removeSnapshots(skillDir): void
+/** Add assertions to evals.json in a skill dir (for US2) */
+addAssertionsToEvals(skillDir: string, assertions: string[]): void
+
+/** Create a modified SKILL.md for old-skill comparison (for US4) */
+createOldSkillVersion(skillDir: string): string  // returns path to old skill dir
+
+/** Create empty temp directory (for US-ERR1) */
 createEmptyDir(): string
-cleanup(dir): void
+
+/** Cleanup temp directory */
+cleanup(dir: string): void
 ```
 
 All fixtures use `test-skills/greeter/` as source. Temp directories tracked and cleaned in `afterEach`.
@@ -205,10 +270,12 @@ tests/e2e/
       plugin-adapter.ts
       sdk-adapter.ts
     stories/
-      evaluate-skill.ts
-      regression-check.ts
-      report-flow.ts
-      approve-flow.ts
+      generate-evals.ts
+      eval-with-assertions.ts
+      eval-without-assertions.ts
+      eval-old-skill.ts
+      review-flow.ts
+      multi-iteration.ts
       error-paths.ts
   cli-flow.test.ts
   plugin-flow.test.ts
@@ -216,18 +283,18 @@ tests/e2e/
 ```
 
 **`cli-flow.test.ts`** — All user stories + CLI-specific:
-- Exit code assertions (0 for success, 1 for regression, non-zero for errors)
+- Exit code assertions (0 for success, non-zero for errors)
 - Stderr content on errors
-- Flag passthrough (`--adapter`, `--workspace`, etc.)
+- Flag passthrough (`--harness`, `--inference`, `--workspace`, `--runs`, `--old-skill`)
 
 **`plugin-flow.test.ts`** — All user stories + plugin-specific:
 - Plugin install/uninstall lifecycle in `beforeAll`/`afterAll`
-- Natural language prompt → correct command translation
-- Skip if plugin SKILL.md missing report section (US3)
+- Natural language prompt → correct command execution
+- Model pinned to `gpt-4.1` to prevent flakiness
 
 **`sdk-flow.test.ts`** — All user stories + SDK-specific:
 - Session lifecycle (create/disconnect per run)
-- Real token counts in timing.json (not estimated)
+- Real token counts in timing.json (not estimated from output length)
 - SDK client start/stop in `beforeAll`/`afterAll`
 
 ### Assertion Tiers
@@ -293,7 +360,7 @@ Skip logic: Each test file checks `adapter.isAvailable()` and auto-skips if not 
 
 ### Timeouts
 
-- Per-test: 300s in `vitest.e2e.config.ts` (real Copilot calls are slow)
+- Per-test: 300s in `vitest.e2e.config.ts` (already configured)
 - Plugin flow may need longer for multi-roundtrip stories
 
 ### Adding a Future Adapter (e.g., Claude Code)
