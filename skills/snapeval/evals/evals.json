@@ -1,93 +1,62 @@
 {
   "skill_name": "snapeval",
-  "generated_by": "snapeval v0.1.0",
   "evals": [
     {
       "id": 1,
       "prompt": "Evaluate my `skills/code-reviewer` skill.",
-      "expected_output": "The assistant accepts the provided skill path, reads that skill's `SKILL.md`, analyzes it, and returns a numbered list of 5-8 realistic test scenarios. It then asks whether to adjust the scenarios or run them.",
-      "files": [],
+      "expected_output": "The assistant reads the skill's SKILL.md, analyzes it, and presents 5-8 realistic test scenarios. Then asks whether to adjust or run them.",
+      "slug": "evaluate-skill",
       "assertions": [
-        "The response references the provided skill path `skills/code-reviewer`.",
+        "The response references the provided skill path.",
         "The response presents a numbered list of test scenarios.",
         "The response includes between 5 and 8 scenarios.",
         "The response asks whether to adjust the scenarios or run them.",
-        "The response does not ask the user to manually create `evals.json` or other config files."
+        "The response does not ask the user to manually create evals.json."
       ]
     },
     {
       "id": 2,
       "prompt": "Can you test a skill for me?",
-      "expected_output": "The assistant recognizes this as an evaluation request but, since no path was provided, asks which skill should be evaluated. It should not generate scenarios yet.",
-      "files": [],
+      "expected_output": "The assistant asks which skill to evaluate since no path was provided. Does not generate scenarios yet.",
+      "slug": "no-path-provided",
       "assertions": [
         "The response asks which skill the user wants to evaluate.",
-        "The response requests a skill name or path.",
         "The response does not invent a target skill.",
-        "The response does not run commands or claim results before a skill path is provided."
+        "The response does not run commands before a skill path is provided."
       ]
     },
     {
       "id": 3,
       "prompt": "Test `skills/commit-message` and focus on edge cases too.",
-      "expected_output": "The assistant reads the target `SKILL.md`, generates 5-8 scenarios that include happy paths, edge cases, and at least one negative test, then asks for confirmation before running anything.",
-      "files": [],
+      "expected_output": "The assistant generates scenarios including happy paths, edge cases, and negative tests, then asks for confirmation.",
+      "slug": "edge-case-focus",
       "assertions": [
         "The response contains at least one happy-path scenario.",
         "The response contains at least one edge-case scenario.",
         "The response contains at least one negative test scenario.",
-        "The response includes between 5 and 8 total scenarios.",
-        "The response asks for confirmation before running capture commands."
+        "The response asks for confirmation before running commands."
       ]
     },
     {
       "id": 4,
-      "prompt": "Check `skills/release-notes` for regressions.",
-      "expected_output": "The assistant runs a regression check using `npx snapeval check <skill-path> --threshold 0.85`, then summarizes which scenarios passed and which regressed in plain language, along with cost and duration.",
-      "files": [],
+      "prompt": "How is my `skills/release-notes` skill doing?",
+      "expected_output": "The assistant runs an eval, shows the with-skill vs without-skill benchmark delta, and interprets the results.",
+      "slug": "review-results",
       "assertions": [
-        "The response refers to a regression check for `skills/release-notes`.",
-        "The response mentions pass/fail outcomes by scenario.",
-        "The response describes regressions in plain language rather than only raw terminal text.",
-        "The response includes cost information prominently.",
-        "The response includes duration information.",
-        "If regressions are reported, the response offers options to fix the skill or approve the new behavior."
+        "The response mentions running snapeval eval or review.",
+        "The response interprets pass rates or benchmark results in plain language.",
+        "The response mentions the delta between with-skill and without-skill."
       ]
     },
     {
       "id": 5,
-      "prompt": "Approve scenario 3 for `skills/router`.",
-      "expected_output": "The assistant approves only scenario 3, confirms what was approved, and reminds the user to commit the updated snapshots.",
-      "files": [],
+      "prompt": "Evaluate `skills/does-not-exist`.",
+      "expected_output": "The assistant handles the missing skill gracefully by reporting that SKILL.md could not be found.",
+      "slug": "missing-skill",
       "assertions": [
-        "The response confirms approval of scenario 3 specifically.",
-        "The response does not imply that all scenarios were approved.",
-        "The response reminds the user to commit updated snapshots.",
-        "The response is framed as a completed approval action rather than a fresh evaluation."
-      ]
-    },
-    {
-      "id": 6,
-      "prompt": "Approve the new snapshots for `skills/router`.",
-      "expected_output": "The assistant approves all updated snapshots for the specified skill, confirms the approval scope, and reminds the user to commit the snapshot changes.",
-      "files": [],
-      "assertions": [
-        "The response confirms that all scenarios or snapshots were approved.",
-        "The response references the target skill path `skills/router`.",
-        "The response reminds the user to commit the updated snapshots.",
-        "The response does not ask the user to edit snapshot files manually."
-      ]
-    },
-    {
-      "id": 7,
-      "prompt": "Check `skills/does-not-exist`.",
-      "expected_output": "The assistant handles the invalid or missing skill path gracefully by clearly reporting that the target skill or its `SKILL.md` could not be found, without pretending the check succeeded.",
-      "files": [],
-      "assertions": [
-        "The response clearly indicates that the skill path or `SKILL.md` could not be found.",
-        "The response does not fabricate regression results.",
-        "The response communicates the problem in plain language.",
-        "The response suggests a corrective next step, such as verifying the path."
+        "The response indicates the skill path or SKILL.md could not be found.",
+        "The response does not fabricate results.",
+        "The response suggests a corrective next step."
       ]
     }
   ]

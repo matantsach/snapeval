@@ -7,7 +7,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ```bash
 npm test              # Run all tests (vitest run)
 npm run test:watch    # Watch mode (vitest)
-npx vitest run tests/engine/comparison/schema.test.ts  # Run a single test file
+npx vitest run tests/engine/grader.test.ts  # Run a single test file
 npm run build         # Compile TypeScript (tsc → dist/)
 npm run dev           # Run CLI in dev mode (tsx bin/snapeval.ts)
 npx tsx bin/snapeval.ts <command> <skill-path>  # Run any CLI command locally
@@ -15,47 +15,48 @@ npx tsx bin/snapeval.ts <command> <skill-path>  # Run any CLI command locally
 
 ## Architecture
 
-**snapeval** is a semantic snapshot testing tool for AI skills following the [agentskills.io](https://agentskills.io) standard. It generates test cases from a skill's `SKILL.md`, captures baseline outputs, and detects regressions through a tiered comparison pipeline.
+**snapeval** is a harness-agnostic eval runner implementing the [agentskills.io evaluation spec](https://agentskills.io/skill-creation/evaluating-skills). Users bring their own harness (Claude Code, Copilot CLI, Copilot SDK, etc.) — snapeval orchestrates the eval workflow and produces spec-compliant artifacts.
 
 ### Core Flow
 
-`init` (AI generates evals.json from SKILL.md) → `capture` (run skill, save baseline snapshots) → `review` (re-run, compare, generate HTML report, open in browser) → `approve` (accept regressions)
+`init` (AI generates evals.json from SKILL.md) → `eval` (run with/without skill, grade assertions, compute benchmark) → `review` (eval + HTML report + feedback template)
 
-Lower-level commands: `check` (compare only, terminal output) · `report` (write iteration results to disk)
-
-### Three Adapter Layers
+### Two Adapter Layers
 
 Each layer is an interface in `src/types.ts` with implementations in `src/adapters/`:
 
-- **SkillAdapter** (`src/adapters/skill/`) — How to invoke a skill. Currently: `CopilotCLIAdapter` (runs `gh copilot`).
-- **InferenceAdapter** (`src/adapters/inference/`) — LLM capabilities for judging and generation. `CopilotInference` and `GitHubModelsInference` with auto-resolution and fallback chaining in `resolve.ts`.
-- **ReportAdapter** (`src/adapters/report/`) — Result output. Terminal (colored), JSON (three files), HTML (interactive viewer).
+- **Harness** (`src/adapters/harness/`) — How to invoke a skill. Implements `run()` with and without SKILL.md. Built-in: `CopilotCLIHarness`. Session isolation required per run.
+- **InferenceAdapter** (`src/adapters/inference/`) — LLM for grading assertions and generating evals. `CopilotInference`, `CopilotSDKInference`, and `GitHubModelsInference` with auto-resolution in `resolve.ts`.
 
-### Tiered Comparison Pipeline (`src/engine/comparison/`)
+### Engine Modules (`src/engine/`)
 
-Located in `pipeline.ts`, orchestrates:
-1. **Tier 1 — Schema check** (`schema.ts`): Free structural comparison of markdown skeleton. Most stable skills pass here.
-2. **Tier 2 — LLM Judge** (`judge.ts`): Bidirectional (forward + reverse) semantic comparison to detect order-swap bias. Returns pass/regressed/inconclusive.
-
-Embedding similarity (`embedding.ts`) and variance envelopes (`variance.ts`) exist but are not yet wired into the pipeline.
+- `workspace.ts` — `WorkspaceManager`: creates `iteration-N/eval-{slug}/{with_skill,without_skill}/outputs/` directory structure
+- `runner.ts` — `runEval()`: orchestrates dual harness runs (with/without skill), writes `timing.json` and `output.txt` per run
+- `grader.ts` — `gradeAssertions()`: LLM-based grading for semantic assertions, script-based for `script:` prefixed assertions. Writes `grading.json`
+- `aggregator.ts` — `computeBenchmark()`: computes `benchmark.json` with mean/stddev/delta across with_skill vs without_skill
+- `generator.ts` — Builds prompts for AI test case generation (prompts + expected outputs, no assertions), parses JSON responses
 
 ### Other Key Modules
 
-- `src/engine/generator.ts` — Builds prompts for AI test case generation, parses JSON responses
-- `src/engine/snapshot.ts` — `SnapshotManager` class: save/load/approve snapshots with SHA-256 audit trail
-- `src/engine/budget.ts` — `BudgetEngine` tracks cumulative spend against a configurable cap
 - `src/config.ts` — Config resolution: defaults → project `snapeval.config.json` → skill-dir config → CLI flags
 - `src/errors.ts` — Custom error hierarchy (`SnapevalError` base) with exit codes
 
 ### CLI Entry Point
 
-`bin/snapeval.ts` uses `commander` to wire six commands, each in `src/commands/`. Commands resolve config, instantiate adapters, and delegate to engine modules.
+`bin/snapeval.ts` uses `commander` to wire three commands (`init`, `eval`, `review`), each in `src/commands/`. Commands resolve config, instantiate adapters, and delegate to engine modules.
+
+### Artifact Formats (agentskills.io spec)
+
+- `timing.json` — `{total_tokens, duration_ms}` per run
+- `grading.json` — `{assertion_results[], summary: {passed, failed, total, pass_rate}}` per run
+- `benchmark.json` — `{run_summary: {with_skill, without_skill, delta}}` per iteration
+- `feedback.json` — `{[evalSlug]: string}` template for human review
 
 ## Testing
 
 - Vitest with globals enabled. Tests mirror source structure under `tests/`.
 - Adapters and inference are mocked via `vi.mock()` / `vi.mocked()`.
-- Integration tests (`tests/integration.test.ts`) exercise the full init → capture → check workflow with mocked adapters.
+- Integration tests (`tests/integration.test.ts`) exercise the full init → eval workflow with mocked adapters.
 - Tests use `fs.mkdtempSync` for temp directories, cleaned up in `afterEach`.
 
 ## TypeScript

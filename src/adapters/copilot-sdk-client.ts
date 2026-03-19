@@ -1,10 +1,6 @@
 /**
  * Shared lazy CopilotClient singleton.
  *
- * Both CopilotSDKAdapter (SkillAdapter) and CopilotSDKInference
- * (InferenceAdapter) share a single client to avoid spawning
- * multiple CLI server processes.
- *
  * The SDK is dynamically imported so that users who don't install
  * @github/copilot-sdk pay no cost.
  */
