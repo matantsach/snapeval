@@ -13,8 +13,9 @@ jobs:
   e2e-cli:
     name: E2E (CLI)
     runs-on: ubuntu-latest
-    continue-on-error: true
     if: ${{ github.event_name == 'push' || !github.event.pull_request.head.repo.fork }}
+    env:
+      COPILOT_GITHUB_TOKEN: ${{ secrets.COPILOT_GITHUB_TOKEN }}
     steps:
       - uses: actions/checkout@v6
       - uses: actions/setup-node@v6
@@ -24,14 +25,13 @@ jobs:
       - run: npm ci && npm run build
       - run: npm install -g @github/copilot
       - run: npx vitest run --config vitest.e2e.config.ts tests/e2e/cli-flow.test.ts
-        env:
-          COPILOT_GITHUB_TOKEN: ${{ secrets.COPILOT_GITHUB_TOKEN }}
 
   e2e-plugin:
     name: E2E (Plugin)
     runs-on: ubuntu-latest
-    continue-on-error: true
     if: ${{ github.event_name == 'push' || !github.event.pull_request.head.repo.fork }}
+    env:
+      COPILOT_GITHUB_TOKEN: ${{ secrets.COPILOT_GITHUB_TOKEN }}
     steps:
       - uses: actions/checkout@v6
       - uses: actions/setup-node@v6
@@ -42,14 +42,13 @@ jobs:
       - run: npm install -g @github/copilot
       - run: copilot plugin install ./
       - run: npx vitest run --config vitest.e2e.config.ts tests/e2e/plugin-flow.test.ts
-        env:
-          COPILOT_GITHUB_TOKEN: ${{ secrets.COPILOT_GITHUB_TOKEN }}
 
   e2e-sdk:
     name: E2E (SDK)
     runs-on: ubuntu-latest
-    continue-on-error: true
     if: ${{ github.event_name == 'push' || !github.event.pull_request.head.repo.fork }}
+    env:
+      COPILOT_GITHUB_TOKEN: ${{ secrets.COPILOT_GITHUB_TOKEN }}
     steps:
       - uses: actions/checkout@v6
       - uses: actions/setup-node@v6
@@ -60,5 +59,3 @@ jobs:
       - run: npm install -g @github/copilot
       - run: npm install @github/copilot-sdk
       - run: npx vitest run --config vitest.e2e.config.ts tests/e2e/sdk-flow.test.ts
-        env:
-          COPILOT_GITHUB_TOKEN: ${{ secrets.COPILOT_GITHUB_TOKEN }}
