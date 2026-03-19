@@ -10,59 +10,52 @@ permissions:
   contents: read
 
 jobs:
-  e2e:
-    name: E2E (Copilot CLI)
+  e2e-cli:
+    name: E2E (CLI)
     runs-on: ubuntu-latest
     if: ${{ github.event_name == 'push' || !github.event.pull_request.head.repo.fork }}
     steps:
       - uses: actions/checkout@v6
-
       - uses: actions/setup-node@v6
         with:
           node-version: 22
           cache: npm
+      - run: npm ci && npm run build
+      - run: npm install -g @github/copilot
+      - run: npx vitest run --config vitest.e2e.config.ts tests/e2e/cli-flow.test.ts
+        env:
+          COPILOT_GITHUB_TOKEN: ${{ secrets.COPILOT_GITHUB_TOKEN }}
 
-      - run: npm ci
-
-      - name: Install Copilot CLI
-        run: npm install -g @github/copilot
-
-      - name: Run E2E tests
-        run: |
-          if compgen -G "tests/e2e/*.test.ts" > /dev/null; then
-            npm run test:e2e
-          else
-            echo "No E2E test files found, skipping."
-          fi
+  e2e-plugin:
+    name: E2E (Plugin)
+    runs-on: ubuntu-latest
+    if: ${{ github.event_name == 'push' || !github.event.pull_request.head.repo.fork }}
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci && npm run build
+      - run: npm install -g @github/copilot
+      - run: copilot plugin install ./
+      - run: npx vitest run --config vitest.e2e.config.ts tests/e2e/plugin-flow.test.ts
         env:
           COPILOT_GITHUB_TOKEN: ${{ secrets.COPILOT_GITHUB_TOKEN }}
 
   e2e-sdk:
-    name: E2E (Copilot SDK)
+    name: E2E (SDK)
     runs-on: ubuntu-latest
     if: ${{ github.event_name == 'push' || !github.event.pull_request.head.repo.fork }}
     steps:
       - uses: actions/checkout@v6
-
       - uses: actions/setup-node@v6
         with:
           node-version: 22
           cache: npm
-
-      - run: npm ci
-
-      - name: Install Copilot CLI
-        run: npm install -g @github/copilot
-
-      - name: Install Copilot SDK
-        run: npm install @github/copilot-sdk
-
-      - name: Run SDK E2E tests
-        run: |
-          if compgen -G "tests/e2e/copilot-sdk*.test.ts" > /dev/null; then
-            npx vitest run --config vitest.e2e.config.ts tests/e2e/copilot-sdk-flow.test.ts
-          else
-            echo "No SDK E2E test files found, skipping."
-          fi
+      - run: npm ci && npm run build
+      - run: npm install -g @github/copilot
+      - run: npm install @github/copilot-sdk
+      - run: npx vitest run --config vitest.e2e.config.ts tests/e2e/sdk-flow.test.ts
         env:
           COPILOT_GITHUB_TOKEN: ${{ secrets.COPILOT_GITHUB_TOKEN }}
