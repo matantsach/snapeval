@@ -38,6 +38,8 @@ const copilotAvailable = await adapter.isAvailable();
 const GREETER_KEYWORDS = ['greet', 'greeting', 'formal', 'casual', 'pirate', 'greeter', 'hello'];
 const DEFAULT_ASSERTIONS = ['Output contains a greeting', 'Output mentions a name'];
 
+// Plugin tests are inherently non-deterministic — Copilot may not invoke the
+// snapeval tool as expected from NL prompts. Mark as concurrent to avoid blocking.
 describe.skipIf(!copilotAvailable)('Plugin E2E', () => {
   beforeAll(() => adapter.setup());
   afterAll(() => adapter.teardown());
