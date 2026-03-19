@@ -1,39 +1,41 @@
-import { describe, it, expect, vi, afterEach } from 'vitest';
-import { resolveConfig, DEFAULT_CONFIG } from '../src/config.js';
+import { describe, it, expect, afterEach } from 'vitest';
 import * as fs from 'node:fs';
+import * as path from 'node:path';
+import * as os from 'node:os';
+import { DEFAULT_CONFIG, resolveConfig } from '../src/config.js';
 
-vi.mock('node:fs');
+describe('config', () => {
+  let tmpDir: string;
 
-describe('resolveConfig', () => {
-  afterEach(() => vi.restoreAllMocks());
-
-  it('returns defaults when no config file or flags', () => {
-    vi.mocked(fs.existsSync).mockReturnValue(false);
-    const config = resolveConfig({}, '/project');
-    expect(config).toEqual(DEFAULT_CONFIG);
+  afterEach(() => {
+    if (tmpDir) fs.rmSync(tmpDir, { recursive: true, force: true });
   });
 
-  it('merges config file values over defaults', () => {
-    vi.mocked(fs.existsSync).mockReturnValue(true);
-    vi.mocked(fs.readFileSync).mockReturnValue(JSON.stringify({ runs: 5 }));
-    const config = resolveConfig({}, '/project');
-    expect(config.runs).toBe(5);
-    expect(config.adapter).toBe('copilot-cli');
+  it('DEFAULT_CONFIG has spec-aligned fields', () => {
+    expect(DEFAULT_CONFIG).toEqual({
+      harness: 'copilot-cli',
+      inference: 'auto',
+      workspace: '../{skill_name}-workspace',
+      runs: 1,
+    });
   });
 
-  it('CLI flags override config file', () => {
-    vi.mocked(fs.existsSync).mockReturnValue(true);
-    vi.mocked(fs.readFileSync).mockReturnValue(JSON.stringify({ runs: 5 }));
-    const config = resolveConfig({ runs: 10 }, '/project');
-    expect(config.runs).toBe(10);
-  });
-
-  it('checks skill dir config before project root', () => {
-    vi.mocked(fs.existsSync).mockImplementation((p) =>
-      String(p).includes('skill-dir') ? true : false
+  it('merges project config → skill config → CLI flags', () => {
+    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'snapeval-config-'));
+    const skillDir = path.join(tmpDir, 'skill');
+    fs.mkdirSync(skillDir, { recursive: true });
+    fs.writeFileSync(
+      path.join(tmpDir, 'snapeval.config.json'),
+      JSON.stringify({ inference: 'github-models' })
     );
-    vi.mocked(fs.readFileSync).mockReturnValue(JSON.stringify({ runs: 5 }));
-    const config = resolveConfig({}, '/project', '/project/skill-dir');
-    expect(config.runs).toBe(5);
+    fs.writeFileSync(
+      path.join(skillDir, 'snapeval.config.json'),
+      JSON.stringify({ runs: 3 })
+    );
+    const config = resolveConfig({ harness: 'custom' }, tmpDir, skillDir);
+    expect(config.harness).toBe('custom');
+    expect(config.inference).toBe('github-models');
+    expect(config.runs).toBe(3);
+    expect(config.workspace).toBe('../{skill_name}-workspace');
   });
 });

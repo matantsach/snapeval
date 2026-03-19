@@ -1,121 +1,62 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { describe, it, expect, vi, afterEach } from 'vitest';
 import * as fs from 'node:fs';
-import * as os from 'node:os';
 import * as path from 'node:path';
-import { reviewCommand } from '../../src/commands/review.js';
-import type { SkillAdapter, InferenceAdapter, SkillOutput, EvalsFile } from '../../src/types.js';
+import * as os from 'node:os';
+
+vi.mock('../../src/commands/eval.js', () => ({
+  evalCommand: vi.fn(),
+}));
 
 vi.mock('node:child_process', () => ({
   execFile: vi.fn(),
 }));
 
-function makeOutput(raw: string): SkillOutput {
-  return { raw, metadata: { tokens: 50, durationMs: 200, model: 'copilot', adapter: 'copilot-cli' } };
-}
-
-function writeEvalsAndSnapshot(tmpDir: string): void {
-  const evalsDir = path.join(tmpDir, 'evals');
-  fs.mkdirSync(path.join(evalsDir, 'snapshots'), { recursive: true });
-
-  const evalsFile: EvalsFile = {
-    skill_name: 'test-skill',
-    generated_by: 'test',
-    evals: [
-      { id: 1, prompt: 'test prompt', expected_output: 'some output', files: [], assertions: [] },
-    ],
-  };
-  fs.writeFileSync(path.join(evalsDir, 'evals.json'), JSON.stringify(evalsFile), 'utf-8');
-
-  const snapshot = {
-    scenario_id: 1,
-    prompt: 'test prompt',
-    output: makeOutput('baseline output'),
-    captured_at: new Date().toISOString(),
-    runs: 1,
-    approved_by: null,
-  };
-  fs.writeFileSync(
-    path.join(evalsDir, 'snapshots', 'scenario-1.snap.json'),
-    JSON.stringify(snapshot),
-    'utf-8'
-  );
-}
+import { reviewCommand } from '../../src/commands/review.js';
+import { evalCommand } from '../../src/commands/eval.js';
+import type { Harness, InferenceAdapter, EvalResults, BenchmarkData } from '../../src/types.js';
 
 describe('reviewCommand', () => {
   let tmpDir: string;
-  let consoleSpy: ReturnType<typeof vi.spyOn>;
-
-  const mockSkillAdapter: SkillAdapter = {
-    name: 'mock',
-    invoke: vi.fn().mockResolvedValue(makeOutput('baseline output')),
-    isAvailable: vi.fn().mockResolvedValue(true),
-  };
-
-  const mockInference: InferenceAdapter = {
-    name: 'mock',
-    chat: vi.fn(),
-    embed: vi.fn(),
-    estimateCost: vi.fn().mockReturnValue(0),
-  };
-
-  beforeEach(() => {
-    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'snapeval-review-test-'));
-    consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
-  });
 
   afterEach(() => {
-    fs.rmSync(tmpDir, { recursive: true, force: true });
-    consoleSpy.mockRestore();
+    if (tmpDir) fs.rmSync(tmpDir, { recursive: true, force: true });
     vi.clearAllMocks();
-    vi.unstubAllEnvs();
   });
 
-  it('runs check and generates HTML report', async () => {
-    writeEvalsAndSnapshot(tmpDir);
+  it('calls eval, creates feedback template', async () => {
+    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'review-'));
+    const iterDir = path.join(tmpDir, 'iteration-1');
+    fs.mkdirSync(iterDir, { recursive: true });
 
-    const { iterationDir, hasRegressions } = await reviewCommand(
-      tmpDir,
-      mockSkillAdapter,
-      mockInference,
-      { budget: 'unlimited' }
-    );
+    const mockBenchmark: BenchmarkData = {
+      run_summary: {
+        with_skill: { pass_rate: { mean: 0.75, stddev: 0 }, time_seconds: { mean: 5, stddev: 0 }, tokens: { mean: 500, stddev: 0 } },
+        without_skill: { pass_rate: { mean: 0.25, stddev: 0 }, time_seconds: { mean: 3, stddev: 0 }, tokens: { mean: 300, stddev: 0 } },
+        delta: { pass_rate: 0.5, time_seconds: 2, tokens: 200 },
+      },
+    };
 
-    expect(hasRegressions).toBe(false);
-    expect(fs.existsSync(path.join(iterationDir, 'report.html'))).toBe(true);
-    expect(fs.existsSync(path.join(iterationDir, 'viewer-data.json'))).toBe(true);
-    expect(fs.existsSync(path.join(iterationDir, 'benchmark.json'))).toBe(true);
-  });
+    const mockResults: EvalResults = {
+      skillName: 'test',
+      evalRuns: [{
+        evalId: 1, slug: 'test-eval', prompt: 'test',
+        withSkill: { output: { raw: 'with', files: [], total_tokens: 500, duration_ms: 5000 } },
+        withoutSkill: { output: { raw: 'without', files: [], total_tokens: 300, duration_ms: 3000 } },
+      }],
+      benchmark: mockBenchmark,
+      iterationDir: iterDir,
+    };
 
-  it('calls execFile to open browser', async () => {
-    vi.stubEnv('CI', '');
-    writeEvalsAndSnapshot(tmpDir);
-    const { execFile } = await import('node:child_process');
+    vi.mocked(evalCommand).mockResolvedValue(mockResults);
 
-    await reviewCommand(tmpDir, mockSkillAdapter, mockInference, { budget: 'unlimited' });
+    const mockHarness: Harness = { name: 'mock', run: vi.fn(), isAvailable: vi.fn() };
+    const mockInference: InferenceAdapter = { name: 'mock', chat: vi.fn() };
 
-    expect(execFile).toHaveBeenCalledTimes(1);
-    const call = vi.mocked(execFile).mock.calls[0] as unknown as [string, string[]];
-    const args = call[1];
-    expect(args[args.length - 1]).toContain('report.html');
-  });
+    await reviewCommand('/skill', mockHarness, mockInference, {
+      workspace: tmpDir, runs: 1, noOpen: true,
+    });
 
-  it('writes iteration directory under evals/results/', async () => {
-    writeEvalsAndSnapshot(tmpDir);
-
-    const { iterationDir } = await reviewCommand(
-      tmpDir,
-      mockSkillAdapter,
-      mockInference,
-      { budget: 'unlimited' }
-    );
-
-    expect(iterationDir).toContain('iteration-1');
-    expect(iterationDir).toContain(path.join('evals', 'results'));
-  });
-
-  it('propagates error when no evals.json exists', async () => {
-    await expect(
-      reviewCommand(tmpDir, mockSkillAdapter, mockInference, { budget: 'unlimited' })
-    ).rejects.toThrow();
+    const feedback = JSON.parse(fs.readFileSync(path.join(iterDir, 'feedback.json'), 'utf-8'));
+    expect(feedback['eval-test-eval']).toBe('');
   });
 });

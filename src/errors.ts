@@ -20,15 +20,15 @@ export class RateLimitError extends SnapevalError {
 }
 
 export class TimeoutError extends SnapevalError {
-  constructor(scenarioId: number, timeoutMs: number) {
-    super(`Scenario ${scenarioId} timed out after ${timeoutMs}ms.`);
+  constructor(evalId: number, timeoutMs: number) {
+    super(`Eval ${evalId} timed out after ${timeoutMs}ms.`);
     this.name = 'TimeoutError';
   }
 }
 
-export class NoBaselineError extends SnapevalError {
-  constructor(skillPath: string) {
-    super(`No baselines found at ${skillPath}/evals/snapshots/. Run \`snapeval capture\` first.`, 2);
-    this.name = 'NoBaselineError';
+export class GradingError extends SnapevalError {
+  constructor(evalId: number, detail: string) {
+    super(`Grading failed for eval ${evalId}: ${detail}`);
+    this.name = 'GradingError';
   }
 }

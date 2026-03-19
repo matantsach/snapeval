@@ -1,7 +1,7 @@
 {
   "name": "snapeval",
-  "version": "1.6.0",
-  "description": "Semantic snapshot testing for AI skills. Zero assertions. AI-driven. Free inference.",
+  "version": "2.0.0",
+  "description": "Harness-agnostic eval runner for agentskills.io skills",
   "type": "module",
   "bin": {
     "snapeval": "./bin/snapeval.ts"
@@ -16,12 +16,10 @@
   },
   "keywords": [
     "ai-skills",
-    "snapshot-testing",
-    "copilot-cli",
-    "copilot-sdk",
     "agentskills",
     "evaluation",
-    "semantic-testing"
+    "harness",
+    "copilot-cli"
   ],
   "author": "Matan Tsach",
   "license": "MIT",
@@ -46,14 +44,6 @@
   "dependencies": {
     "chalk": "^5.4.1",
     "commander": "^14.0.3"
-  },
-  "peerDependencies": {
-    "@github/copilot-sdk": "~0.1.0"
-  },
-  "peerDependenciesMeta": {
-    "@github/copilot-sdk": {
-      "optional": true
-    }
   },
   "devDependencies": {
     "@types/node": "^25.5.0",

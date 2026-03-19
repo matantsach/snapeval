@@ -1,6 +1,4 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { AdapterNotAvailableError } from '../../src/errors.js';
-import type { InferenceAdapter } from '../../src/types.js';
 
 // We mock child_process before importing the module under test
 const mockExecFileSync = vi.fn();
@@ -54,43 +52,6 @@ describe('CopilotInference', () => {
       });
       const adapter = new CopilotInference();
       await expect(adapter.chat([{ role: 'user', content: 'test' }])).rejects.toThrow('gh not found');
-    });
-  });
-
-  describe('embed()', () => {
-    it('delegates to fallback adapter when provided', async () => {
-      const mockFallback: InferenceAdapter = {
-        name: 'mock-fallback',
-        chat: vi.fn(),
-        embed: vi.fn().mockResolvedValue([0.1, 0.2, 0.3]),
-        estimateCost: vi.fn().mockReturnValue(0),
-      };
-      const adapter = new CopilotInference(mockFallback);
-      const result = await adapter.embed('test text');
-      expect(result).toEqual([0.1, 0.2, 0.3]);
-      expect(mockFallback.embed).toHaveBeenCalledWith('test text');
-    });
-
-    it('throws AdapterNotAvailableError when no fallback is provided', async () => {
-      const adapter = new CopilotInference();
-      await expect(adapter.embed('text')).rejects.toThrow(AdapterNotAvailableError);
-    });
-
-    it('error message mentions embeddings not supported', async () => {
-      const adapter = new CopilotInference();
-      try {
-        await adapter.embed('text');
-      } catch (e) {
-        expect((e as Error).message).toContain('embeddings');
-      }
-    });
-  });
-
-  describe('estimateCost()', () => {
-    it('always returns 0', () => {
-      const adapter = new CopilotInference();
-      expect(adapter.estimateCost(0)).toBe(0);
-      expect(adapter.estimateCost(9999)).toBe(0);
     });
   });
 

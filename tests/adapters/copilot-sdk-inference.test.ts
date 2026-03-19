@@ -1,6 +1,4 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { AdapterNotAvailableError } from '../../src/errors.js';
-import type { InferenceAdapter } from '../../src/types.js';
 
 // Mock the shared client module
 const mockCreateSession = vi.fn();
@@ -125,40 +123,4 @@ describe('CopilotSDKInference', () => {
     });
   });
 
-  describe('embed()', () => {
-    it('delegates to fallback adapter when provided', async () => {
-      const mockFallback: InferenceAdapter = {
-        name: 'mock-fallback',
-        chat: vi.fn(),
-        embed: vi.fn().mockResolvedValue([0.1, 0.2, 0.3]),
-        estimateCost: vi.fn().mockReturnValue(0),
-      };
-      const adapter = new CopilotSDKInference(mockFallback);
-      const result = await adapter.embed('test text');
-      expect(result).toEqual([0.1, 0.2, 0.3]);
-      expect(mockFallback.embed).toHaveBeenCalledWith('test text');
-    });
-
-    it('throws AdapterNotAvailableError when no fallback is provided', async () => {
-      const adapter = new CopilotSDKInference();
-      await expect(adapter.embed('text')).rejects.toThrow(AdapterNotAvailableError);
-    });
-
-    it('error message mentions embeddings not supported', async () => {
-      const adapter = new CopilotSDKInference();
-      try {
-        await adapter.embed('text');
-      } catch (e) {
-        expect((e as Error).message).toContain('embeddings');
-      }
-    });
-  });
-
-  describe('estimateCost()', () => {
-    it('always returns 0', () => {
-      const adapter = new CopilotSDKInference();
-      expect(adapter.estimateCost(0)).toBe(0);
-      expect(adapter.estimateCost(9999)).toBe(0);
-    });
-  });
 });

@@ -1,69 +1,45 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { TerminalReporter } from '../../src/adapters/report/terminal.js';
-import type { EvalResults, ScenarioResult } from '../../src/types.js';
+import type { EvalResults, EvalRunResult, BenchmarkData } from '../../src/types.js';
 
-function makeScenario(
+function makeEvalRun(
   id: number,
-  verdict: 'pass' | 'regressed' | 'inconclusive',
-  tier: 1 | 2 = 1
-): ScenarioResult {
+  passRate?: number,
+): EvalRunResult {
   return {
-    scenarioId: id,
+    evalId: id,
+    slug: `eval-${id}`,
     prompt: `test prompt ${id}`,
-    comparison: {
-      scenarioId: id,
-      verdict,
-      tier,
-      details: `verdict: ${verdict}`,
+    withSkill: {
+      output: { raw: 'with skill output', files: [], total_tokens: 100, duration_ms: 1500 },
+      grading: passRate !== undefined ? {
+        assertion_results: [{ text: 'assertion', passed: passRate > 0.5, evidence: 'evidence' }],
+        summary: { passed: passRate > 0.5 ? 1 : 0, failed: passRate > 0.5 ? 0 : 1, total: 1, pass_rate: passRate },
+      } : undefined,
     },
-    timing: {
-      total_tokens: 100,
-      duration_ms: 1500,
-    },
-    newOutput: {
-      raw: 'output text',
-      metadata: {
-        tokens: 100,
-        durationMs: 1500,
-        model: 'copilot',
-        adapter: 'copilot-cli',
-      },
-    },
-    baselineOutput: {
-      raw: 'baseline output',
-      metadata: {
-        tokens: 100,
-        durationMs: 1500,
-        model: 'copilot',
-        adapter: 'copilot-cli',
-      },
+    withoutSkill: {
+      output: { raw: 'without skill output', files: [], total_tokens: 80, duration_ms: 1000 },
+      grading: passRate !== undefined ? {
+        assertion_results: [{ text: 'assertion', passed: false, evidence: 'evidence' }],
+        summary: { passed: 0, failed: 1, total: 1, pass_rate: 0 },
+      } : undefined,
     },
   };
 }
 
-function makeResults(scenarios: ScenarioResult[]): EvalResults {
-  const passed = scenarios.filter((s) => s.comparison.verdict === 'pass').length;
-  const regressed = scenarios.filter((s) => s.comparison.verdict === 'regressed').length;
+function makeResults(runs: EvalRunResult[]): EvalResults {
+  const benchmark: BenchmarkData = {
+    run_summary: {
+      with_skill: { pass_rate: { mean: 0.75, stddev: 0 }, time_seconds: { mean: 1.5, stddev: 0 }, tokens: { mean: 100, stddev: 0 } },
+      without_skill: { pass_rate: { mean: 0.25, stddev: 0 }, time_seconds: { mean: 1.0, stddev: 0 }, tokens: { mean: 80, stddev: 0 } },
+      delta: { pass_rate: 0.5, time_seconds: 0.5, tokens: 20 },
+    },
+  };
   return {
     skillName: 'my-skill',
-    scenarios,
-    summary: {
-      total_scenarios: scenarios.length,
-      passed,
-      regressed,
-      pass_rate: scenarios.length > 0 ? passed / scenarios.length : 0,
-      total_tokens: 300,
-      total_cost_usd: 0,
-      total_duration_ms: 4500,
-      tier_breakdown: {
-        tier1_schema: 1,
-        tier2_llm_judge: 1,
-      },
-    },
-    timing: {
-      total_tokens: 300,
-      duration_ms: 4500,
-    },
+    evalRuns: runs,
+    benchmark,
+    iterationDir: '/tmp/test/iteration-1',
   };
 }
 
@@ -84,75 +60,54 @@ describe('TerminalReporter', () => {
 
   it('prints the skill name', async () => {
     const reporter = new TerminalReporter();
-    await reporter.report(makeResults([makeScenario(1, 'pass')]));
+    await reporter.report(makeResults([makeEvalRun(1, 1.0)]));
     const output = logLines.join('\n');
     expect(output).toContain('my-skill');
   });
 
-  it('prints scenario IDs', async () => {
+  it('prints eval IDs', async () => {
     const reporter = new TerminalReporter();
-    await reporter.report(makeResults([makeScenario(1, 'pass'), makeScenario(2, 'regressed')]));
+    await reporter.report(makeResults([makeEvalRun(1, 1.0), makeEvalRun(2, 0.5)]));
     const output = logLines.join('\n');
-    expect(output).toContain('Scenario 1');
-    expect(output).toContain('Scenario 2');
+    expect(output).toContain('#1');
+    expect(output).toContain('#2');
   });
 
-  it('prints tier information', async () => {
+  it('prints with_skill and without_skill labels', async () => {
     const reporter = new TerminalReporter();
-    await reporter.report(makeResults([makeScenario(1, 'pass', 2)]));
+    await reporter.report(makeResults([makeEvalRun(1, 0.75)]));
     const output = logLines.join('\n');
-    expect(output).toContain('tier2');
+    expect(output).toContain('with_skill');
+    expect(output).toContain('without_skill');
   });
 
-  it('prints pass count', async () => {
+  it('prints delta pass rate', async () => {
     const reporter = new TerminalReporter();
-    await reporter.report(makeResults([makeScenario(1, 'pass'), makeScenario(2, 'pass'), makeScenario(3, 'regressed')]));
+    await reporter.report(makeResults([makeEvalRun(1, 1.0)]));
     const output = logLines.join('\n');
-    expect(output).toContain('2 passed');
+    expect(output).toContain('50.0% pass rate');
   });
 
-  it('prints regressed count', async () => {
+  it('prints n/a when no grading available', async () => {
     const reporter = new TerminalReporter();
-    await reporter.report(makeResults([makeScenario(1, 'pass'), makeScenario(2, 'regressed')]));
+    await reporter.report(makeResults([makeEvalRun(1)]));
     const output = logLines.join('\n');
-    expect(output).toContain('1 regressed');
-  });
-
-  it('prints total scenarios count', async () => {
-    const reporter = new TerminalReporter();
-    await reporter.report(makeResults([makeScenario(1, 'pass'), makeScenario(2, 'pass'), makeScenario(3, 'inconclusive')]));
-    const output = logLines.join('\n');
-    expect(output).toContain('3 total');
+    expect(output).toContain('n/a');
   });
 
   it('prints token count', async () => {
     const reporter = new TerminalReporter();
-    await reporter.report(makeResults([makeScenario(1, 'pass')]));
+    await reporter.report(makeResults([makeEvalRun(1, 1.0)]));
     const output = logLines.join('\n');
-    expect(output).toContain('300');
+    expect(output).toContain('100');
   });
 
   it('prints duration in seconds', async () => {
     const reporter = new TerminalReporter();
-    await reporter.report(makeResults([makeScenario(1, 'pass')]));
+    await reporter.report(makeResults([makeEvalRun(1, 1.0)]));
     const output = logLines.join('\n');
-    // 4500ms => 4.50s
-    expect(output).toContain('4.50');
-  });
-
-  it('prints cost', async () => {
-    const reporter = new TerminalReporter();
-    await reporter.report(makeResults([makeScenario(1, 'pass')]));
-    const output = logLines.join('\n');
-    expect(output).toContain('$0.0000');
-  });
-
-  it('prints tier breakdown', async () => {
-    const reporter = new TerminalReporter();
-    await reporter.report(makeResults([makeScenario(1, 'pass')]));
-    const output = logLines.join('\n');
-    expect(output).toContain('schema');
-    expect(output).toContain('llm judge');
+    // 1500ms => 1.50s
+    expect(output).toContain('1.50');
   });
 
   it('name is "terminal"', () => {

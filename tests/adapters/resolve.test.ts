@@ -55,7 +55,7 @@ describe('resolveInference', () => {
       });
     });
 
-    it('returns CopilotInference (with GitHubModels fallback) when both copilot and GITHUB_TOKEN available', () => {
+    it('returns CopilotInference when both copilot and GITHUB_TOKEN available', () => {
       mockExecFileSync.mockReturnValue('copilot 1.0.0');
       withEnv('GITHUB_TOKEN', 'test-token', () => {
         const adapter = resolveInference('auto');

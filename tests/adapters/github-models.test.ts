@@ -116,60 +116,6 @@ describe('GitHubModelsInference', () => {
     });
   });
 
-  describe('embed()', () => {
-    it('POSTs to /embeddings and returns data[0].embedding', async () => {
-      const embedding = [0.1, 0.2, 0.3];
-      const mockFetch = vi.fn().mockResolvedValue(
-        makeFetchResponse(200, { data: [{ embedding }] })
-      );
-      globalThis.fetch = mockFetch;
-
-      const adapter = new GitHubModelsInference('token');
-      const result = await adapter.embed('hello world');
-
-      expect(result).toEqual(embedding);
-      const [url] = mockFetch.mock.calls[0] as [string, RequestInit];
-      expect(url).toContain('/embeddings');
-    });
-
-    it('sends the input text in request body', async () => {
-      const mockFetch = vi.fn().mockResolvedValue(
-        makeFetchResponse(200, { data: [{ embedding: [1, 2, 3] }] })
-      );
-      globalThis.fetch = mockFetch;
-
-      const adapter = new GitHubModelsInference('token');
-      await adapter.embed('test text');
-
-      const [, init] = mockFetch.mock.calls[0] as [string, RequestInit];
-      const body = JSON.parse(init.body as string);
-      expect(body.input).toBe('test text');
-    });
-
-    it('throws RateLimitError on 429', async () => {
-      globalThis.fetch = vi.fn().mockResolvedValue(makeFetchResponse(429, {}));
-
-      const adapter = new GitHubModelsInference('token');
-      await expect(adapter.embed('text')).rejects.toThrow(RateLimitError);
-    });
-
-    it('throws generic error on non-ok response', async () => {
-      globalThis.fetch = vi.fn().mockResolvedValue(makeFetchResponse(503, {}));
-
-      const adapter = new GitHubModelsInference('token');
-      await expect(adapter.embed('text')).rejects.toThrow('503');
-    });
-  });
-
-  describe('estimateCost()', () => {
-    it('always returns 0', () => {
-      const adapter = new GitHubModelsInference('token');
-      expect(adapter.estimateCost(0)).toBe(0);
-      expect(adapter.estimateCost(1000)).toBe(0);
-      expect(adapter.estimateCost(1_000_000)).toBe(0);
-    });
-  });
-
   describe('name', () => {
     it('is "github-models"', () => {
       const adapter = new GitHubModelsInference('token');

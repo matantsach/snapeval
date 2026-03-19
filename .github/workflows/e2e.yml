@@ -28,7 +28,12 @@ jobs:
         run: npm install -g @github/copilot
 
       - name: Run E2E tests
-        run: npm run test:e2e
+        run: |
+          if compgen -G "tests/e2e/*.test.ts" > /dev/null; then
+            npm run test:e2e
+          else
+            echo "No E2E test files found, skipping."
+          fi
         env:
           COPILOT_GITHUB_TOKEN: ${{ secrets.COPILOT_GITHUB_TOKEN }}
 
@@ -53,6 +58,11 @@ jobs:
         run: npm install @github/copilot-sdk
 
       - name: Run SDK E2E tests
-        run: npx vitest run --config vitest.e2e.config.ts tests/e2e/copilot-sdk-flow.test.ts
+        run: |
+          if compgen -G "tests/e2e/copilot-sdk*.test.ts" > /dev/null; then
+            npx vitest run --config vitest.e2e.config.ts tests/e2e/copilot-sdk-flow.test.ts
+          else
+            echo "No SDK E2E test files found, skipping."
+          fi
         env:
           COPILOT_GITHUB_TOKEN: ${{ secrets.COPILOT_GITHUB_TOKEN }}

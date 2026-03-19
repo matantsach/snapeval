@@ -13,21 +13,19 @@ function makeMockInference(skillName = 'test-skill'): InferenceAdapter {
         id: 1,
         prompt: 'Hello world',
         expected_output: 'A greeting',
-        assertions: ['Contains a greeting'],
+        slug: 'hello-world',
       },
       {
         id: 2,
         prompt: 'Edge case: empty string',
         expected_output: 'Handles gracefully',
-        assertions: ['Does not throw an error'],
+        slug: 'empty-string-edge',
       },
     ],
   });
   return {
     name: 'mock',
     chat: vi.fn().mockResolvedValue(response),
-    embed: vi.fn().mockResolvedValue([]),
-    estimateCost: vi.fn().mockReturnValue(0),
   };
 }
 
@@ -56,8 +54,12 @@ describe('initCommand', () => {
 
     const evalsFile = JSON.parse(fs.readFileSync(evalsPath, 'utf-8'));
     expect(evalsFile.skill_name).toBe('my-skill');
-    expect(evalsFile.generated_by).toBe('snapeval v1.0.0');
     expect(evalsFile.evals).toHaveLength(2);
+    // New generator does not produce generated_by or assertions
+    expect(evalsFile.generated_by).toBeUndefined();
+    for (const e of evalsFile.evals) {
+      expect(e.assertions).toBeUndefined();
+    }
   });
 
   it('also accepts skill.md (lowercase)', async () => {
@@ -73,13 +75,11 @@ describe('initCommand', () => {
   it('uses the skill directory basename as fallback skill name', async () => {
     // When the LLM response omits skill_name, the dir basename is used
     const noNameResponse = JSON.stringify({
-      evals: [{ id: 1, prompt: 'test', expected_output: 'ok', assertions: [] }],
+      evals: [{ id: 1, prompt: 'test', expected_output: 'ok' }],
     });
     const inference: InferenceAdapter = {
       name: 'mock',
       chat: vi.fn().mockResolvedValue(noNameResponse),
-      embed: vi.fn().mockResolvedValue([]),
-      estimateCost: vi.fn().mockReturnValue(0),
     };
     fs.writeFileSync(path.join(tmpDir, 'SKILL.md'), '# Skill');
 

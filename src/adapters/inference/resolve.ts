@@ -24,12 +24,6 @@ export function resolveInference(preference: string): InferenceAdapter {
     const copilotAvailable = isCopilotAvailable();
     const tokenAvailable = isGitHubTokenAvailable();
 
-    if (copilotAvailable && tokenAvailable) {
-      // Copilot for chat, GitHubModels as embedding fallback
-      const githubModels = new GitHubModelsInference();
-      return new CopilotInference(githubModels);
-    }
-
     if (copilotAvailable) {
       return new CopilotInference();
     }
@@ -51,8 +45,7 @@ export function resolveInference(preference: string): InferenceAdapter {
         'GitHub Copilot CLI is not available. Install with: npm install -g @github/copilot'
       );
     }
-    const fallback = isGitHubTokenAvailable() ? new GitHubModelsInference() : undefined;
-    return new CopilotInference(fallback);
+    return new CopilotInference();
   }
 
   if (preference === 'github-models') {
@@ -72,8 +65,7 @@ export function resolveInference(preference: string): InferenceAdapter {
         '@github/copilot-sdk is not installed. Install with: npm install @github/copilot-sdk'
       );
     }
-    const fallback = isGitHubTokenAvailable() ? new GitHubModelsInference() : undefined;
-    return new CopilotSDKInference(fallback);
+    return new CopilotSDKInference();
   }
 
   throw new AdapterNotAvailableError(

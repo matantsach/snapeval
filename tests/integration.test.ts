@@ -1,106 +1,98 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, afterEach } from 'vitest';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import * as os from 'node:os';
 import { initCommand } from '../src/commands/init.js';
-import { checkCommand } from '../src/commands/check.js';
-import { SnapshotManager } from '../src/engine/snapshot.js';
-import type { SkillAdapter, InferenceAdapter, SkillOutput } from '../src/types.js';
+import { evalCommand } from '../src/commands/eval.js';
+import type { Harness, HarnessRunResult, InferenceAdapter } from '../src/types.js';
 
-describe('Full workflow integration', () => {
+describe('Full workflow: init → eval', () => {
   let tmpDir: string;
 
   const mockInference: InferenceAdapter = {
     name: 'mock',
     chat: vi.fn(),
-    embed: vi.fn().mockResolvedValue([1, 0, 0]),
-    estimateCost: () => 0,
   };
 
-  const baseOutput: SkillOutput = {
-    raw: '## Review\n\n1. SQL injection found\n\n## Recommendations\n\n- Use parameterized queries',
-    metadata: { tokens: 100, durationMs: 500, model: 'gpt-5-mini', adapter: 'mock' },
+  const mockResult: HarnessRunResult = {
+    raw: 'Good day, Eleanor. It is a pleasure to make your acquaintance.',
+    files: [],
+    total_tokens: 100,
+    duration_ms: 2000,
   };
 
-  const mockSkillAdapter: SkillAdapter = {
+  const mockHarness: Harness = {
     name: 'mock',
-    invoke: vi.fn().mockResolvedValue(baseOutput),
-    isAvailable: async () => true,
+    run: vi.fn().mockResolvedValue(mockResult),
+    isAvailable: vi.fn().mockResolvedValue(true),
   };
 
-  beforeEach(() => {
-    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'snapeval-integration-'));
-    fs.writeFileSync(path.join(tmpDir, 'SKILL.md'), '# Code Reviewer\n\nReviews code for security issues');
-    vi.mocked(mockInference.chat).mockResolvedValue(JSON.stringify({
-      skill_name: 'code-reviewer',
+  afterEach(() => {
+    if (tmpDir) fs.rmSync(tmpDir, { recursive: true, force: true });
+    vi.clearAllMocks();
+  });
+
+  it('init generates evals.json, eval produces all spec artifacts', async () => {
+    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'snapeval-integ-'));
+    const skillDir = path.join(tmpDir, 'greeter');
+    fs.mkdirSync(skillDir, { recursive: true });
+    fs.writeFileSync(path.join(skillDir, 'SKILL.md'), '# Greeter\nGreets people formally');
+
+    // Mock inference for init
+    vi.mocked(mockInference.chat).mockResolvedValueOnce(JSON.stringify({
+      skill_name: 'greeter',
       evals: [
-        { id: 1, prompt: 'Review this vulnerable file', expected_output: 'Finds SQL injection', assertions: ['Mentions SQL injection'] },
-        { id: 2, prompt: 'Review clean code', expected_output: 'No issues', assertions: ['Says no issues'] },
+        { id: 1, prompt: 'Greet Eleanor formally', expected_output: 'Formal greeting', slug: 'greet-eleanor' },
+        { id: 2, prompt: 'Hey there', expected_output: 'Default greeting', slug: 'casual-greeting' },
       ],
     }));
-  });
 
-  afterEach(() => fs.rmSync(tmpDir, { recursive: true, force: true }));
+    // Init
+    await initCommand(skillDir, mockInference);
+    const evalsPath = path.join(skillDir, 'evals', 'evals.json');
+    expect(fs.existsSync(evalsPath)).toBe(true);
+    const evalsFile = JSON.parse(fs.readFileSync(evalsPath, 'utf-8'));
+    expect(evalsFile).not.toHaveProperty('generated_by');
+    expect(evalsFile.evals).toHaveLength(2);
 
-  it('init → capture → check (no regression) → full pass', async () => {
-    // Init generates evals.json
-    await initCommand(tmpDir, mockInference);
-    expect(fs.existsSync(path.join(tmpDir, 'evals', 'evals.json'))).toBe(true);
+    // Add assertions manually (simulating user adding after first run)
+    evalsFile.evals[0].assertions = ['Output contains "Eleanor"'];
+    fs.writeFileSync(evalsPath, JSON.stringify(evalsFile, null, 2));
 
-    // Capture baselines (manual via SnapshotManager since we mock adapters)
-    const manager = new SnapshotManager(path.join(tmpDir, 'evals'));
-    manager.saveSnapshot(1, 'Review this vulnerable file', baseOutput);
-    manager.saveSnapshot(2, 'Review clean code', baseOutput);
+    // Mock inference for grading
+    vi.mocked(mockInference.chat).mockResolvedValue(JSON.stringify({
+      results: [
+        { text: 'Output contains "Eleanor"', passed: true, evidence: 'Found "Eleanor" in output' },
+      ],
+    }));
 
-    // Reset mocks: skill returns same baseOutput
-    vi.mocked(mockSkillAdapter.invoke).mockResolvedValue(baseOutput);
-
-    // Check — same output → pass at Tier 1 (schema match)
-    const results = await checkCommand(tmpDir, mockSkillAdapter, mockInference, {
-      budget: 'unlimited',
+    // Eval
+    const workspaceDir = path.join(tmpDir, 'greeter-workspace');
+    const results = await evalCommand(skillDir, mockHarness, mockInference, {
+      workspace: workspaceDir,
+      runs: 1,
     });
-    expect(results.summary.passed).toBe(2);
-    expect(results.summary.regressed).toBe(0);
-  });
 
-  it('detects regression when output changes', async () => {
-    await initCommand(tmpDir, mockInference);
-    const manager = new SnapshotManager(path.join(tmpDir, 'evals'));
-    manager.saveSnapshot(1, 'Review this vulnerable file', baseOutput);
-    manager.saveSnapshot(2, 'Review clean code', baseOutput);
+    // Verify workspace structure
+    expect(results.iterationDir).toContain('iteration-1');
+    expect(fs.existsSync(path.join(results.iterationDir, 'benchmark.json'))).toBe(true);
 
-    // Scenario 1 changes output, scenario 2 stays same
-    const changedOutput: SkillOutput = {
-      raw: 'File too large, skipping review.',
-      metadata: { tokens: 20, durationMs: 100, model: 'gpt-5-mini', adapter: 'mock' },
-    };
-    vi.mocked(mockSkillAdapter.invoke)
-      .mockResolvedValueOnce(changedOutput)
-      .mockResolvedValueOnce(baseOutput);
+    // Verify per-eval artifacts
+    const evalDir1 = path.join(results.iterationDir, 'eval-greet-eleanor');
+    expect(fs.existsSync(path.join(evalDir1, 'with_skill', 'timing.json'))).toBe(true);
+    expect(fs.existsSync(path.join(evalDir1, 'without_skill', 'timing.json'))).toBe(true);
+    expect(fs.existsSync(path.join(evalDir1, 'with_skill', 'grading.json'))).toBe(true);
+    expect(fs.existsSync(path.join(evalDir1, 'with_skill', 'outputs', 'output.txt'))).toBe(true);
 
-    // LLM judge: both forward and reverse calls return "different" → regressed
-    vi.mocked(mockInference.chat).mockResolvedValue(JSON.stringify({ verdict: 'different' }));
+    // Verify benchmark
+    const benchmark = JSON.parse(fs.readFileSync(path.join(results.iterationDir, 'benchmark.json'), 'utf-8'));
+    expect(benchmark.run_summary).toHaveProperty('with_skill');
+    expect(benchmark.run_summary).toHaveProperty('without_skill');
+    expect(benchmark.run_summary).toHaveProperty('delta');
 
-    const results = await checkCommand(tmpDir, mockSkillAdapter, mockInference, {
-      budget: 'unlimited',
-    });
-    expect(results.summary.regressed).toBeGreaterThanOrEqual(1);
-  });
-
-  it('approve updates baseline', async () => {
-    await initCommand(tmpDir, mockInference);
-    const manager = new SnapshotManager(path.join(tmpDir, 'evals'));
-    manager.saveSnapshot(1, 'test', baseOutput);
-
-    const newOutput: SkillOutput = {
-      raw: 'New behavior',
-      metadata: { tokens: 50, durationMs: 200, model: 'gpt-5-mini', adapter: 'mock' },
-    };
-
-    // Approve scenario 1 with newOutput directly via SnapshotManager
-    manager.approve(1, 'test', newOutput);
-
-    const updated = manager.loadSnapshot(1);
-    expect(updated!.output.raw).toBe('New behavior');
+    // Verify results object
+    expect(results.evalRuns).toHaveLength(2);
+    expect(results.skillName).toBe('greeter');
+    expect(results.evalRuns[0].withSkill.grading?.summary.passed).toBe(1);
   });
 });
