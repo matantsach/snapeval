@@ -15,6 +15,8 @@ export class CLIAdapter implements E2ETestAdapter {
         stdio: 'pipe',
         cwd: PROJECT_ROOT,
       });
+      // Copilot CLI must be installed for the harness to work
+      execFileSync('copilot', ['--version'], { encoding: 'utf-8', stdio: 'pipe' });
       return true;
     } catch {
       return false;

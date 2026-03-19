@@ -15,10 +15,14 @@ export class SDKAdapter implements E2ETestAdapter {
 
   async isAvailable(): Promise<boolean> {
     try {
-      const { isSDKInstalled } = await import(
+      const { isSDKInstalled, getClient } = await import(
         path.join(PROJECT_ROOT, 'src', 'adapters', 'copilot-sdk-client.ts')
       );
-      return isSDKInstalled();
+      if (!isSDKInstalled()) return false;
+      // Verify the SDK can actually be imported and a client started
+      const client = await getClient();
+      await client.stop?.();
+      return true;
     } catch {
       return false;
     }
