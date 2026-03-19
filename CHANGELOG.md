@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.7.0](https://github.com/matantsach/snapeval/compare/snapeval-v1.6.0...snapeval-v1.7.0) (2026-03-19)
+
+
+### Features
+
+* add E2E tests for agentskills.io eval pipeline ([#30](https://github.com/matantsach/snapeval/issues/30)) ([c7348ba](https://github.com/matantsach/snapeval/commit/c7348ba4e8653f56d86548276629d514aede6bf0))
+
 ## [1.6.0](https://github.com/matantsach/snapeval/compare/snapeval-v1.5.0...snapeval-v1.6.0) (2026-03-17)
 
 
