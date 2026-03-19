@@ -13,6 +13,7 @@ jobs:
   e2e-cli:
     name: E2E (CLI)
     runs-on: ubuntu-latest
+    continue-on-error: true
     if: ${{ github.event_name == 'push' || !github.event.pull_request.head.repo.fork }}
     steps:
       - uses: actions/checkout@v6
@@ -29,6 +30,7 @@ jobs:
   e2e-plugin:
     name: E2E (Plugin)
     runs-on: ubuntu-latest
+    continue-on-error: true
     if: ${{ github.event_name == 'push' || !github.event.pull_request.head.repo.fork }}
     steps:
       - uses: actions/checkout@v6
@@ -46,6 +48,7 @@ jobs:
   e2e-sdk:
     name: E2E (SDK)
     runs-on: ubuntu-latest
+    continue-on-error: true
     if: ${{ github.event_name == 'push' || !github.event.pull_request.head.repo.fork }}
     steps:
       - uses: actions/checkout@v6

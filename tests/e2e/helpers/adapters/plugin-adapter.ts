@@ -17,12 +17,6 @@ export class PluginAdapter implements E2ETestAdapter {
     try {
       // Copilot CLI must be installed
       execFileSync('copilot', ['--version'], { encoding: 'utf-8', stdio: 'pipe' });
-      // Verify copilot is authenticated by running a trivial prompt
-      execFileSync('copilot', ['-p', 'say ok', '-s', '--no-ask-user'], {
-        encoding: 'utf-8',
-        stdio: 'pipe',
-        timeout: 30_000,
-      });
       return true;
     } catch {
       return false;
