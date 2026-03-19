@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { buildGeneratorPrompt, generateEvals, writeEvalsJson } from '../../src/engine/generator.js';
+import { buildGeneratorPrompt, generateEvals } from '../../src/engine/generator.js';
 import type { InferenceAdapter } from '../../src/types.js';
 
 // --- buildGeneratorPrompt ---
@@ -27,6 +27,16 @@ describe('buildGeneratorPrompt', () => {
     const prompt = buildGeneratorPrompt('skill');
     expect(prompt).toContain('Return ONLY the JSON');
   });
+
+  it('does NOT ask for assertions', () => {
+    const prompt = buildGeneratorPrompt('skill');
+    expect(prompt).not.toContain('assertions');
+  });
+
+  it('asks for a slug field', () => {
+    const prompt = buildGeneratorPrompt('skill');
+    expect(prompt).toContain('"slug"');
+  });
 });
 
 // --- generateEvals ---
@@ -35,8 +45,6 @@ function makeMockInference(responseText: string): InferenceAdapter {
   return {
     name: 'mock',
     chat: vi.fn().mockResolvedValue(responseText),
-    embed: vi.fn().mockResolvedValue([]),
-    estimateCost: vi.fn().mockReturnValue(0),
   };
 }
 
@@ -45,15 +53,15 @@ const VALID_LLM_RESPONSE = JSON.stringify({
   evals: [
     {
       id: 1,
+      slug: 'friendly-greeting',
       prompt: 'Hello, how are you?',
       expected_output: 'A friendly greeting response',
-      assertions: ['Response contains a greeting'],
     },
     {
       id: 2,
+      slug: 'simple-math',
       prompt: 'What is 2 + 2?',
       expected_output: 'Returns 4',
-      assertions: ['Output equals 4'],
     },
   ],
 });
@@ -64,16 +72,39 @@ describe('generateEvals', () => {
     const result = await generateEvals('skill content', 'fallback-name', inference);
 
     expect(result.skill_name).toBe('test-skill');
-    expect(result.generated_by).toBe('snapeval v1.0.0');
     expect(result.evals).toHaveLength(2);
     expect(result.evals[0].id).toBe(1);
     expect(result.evals[0].prompt).toBe('Hello, how are you?');
-    expect(result.evals[0].assertions).toEqual(['Response contains a greeting']);
+    expect(result.evals[0].slug).toBe('friendly-greeting');
+  });
+
+  it('does not include generated_by in the result', async () => {
+    const inference = makeMockInference(VALID_LLM_RESPONSE);
+    const result = await generateEvals('skill content', 'fallback-name', inference);
+
+    expect(result).not.toHaveProperty('generated_by');
+  });
+
+  it('generated evals have no assertions field', async () => {
+    const inference = makeMockInference(VALID_LLM_RESPONSE);
+    const result = await generateEvals('skill content', 'fallback-name', inference);
+
+    for (const evalCase of result.evals) {
+      expect(evalCase).not.toHaveProperty('assertions');
+    }
+  });
+
+  it('generated evals can have slug field', async () => {
+    const inference = makeMockInference(VALID_LLM_RESPONSE);
+    const result = await generateEvals('skill content', 'fallback-name', inference);
+
+    expect(result.evals[0].slug).toBe('friendly-greeting');
+    expect(result.evals[1].slug).toBe('simple-math');
   });
 
   it('falls back to skillName when skill_name is missing from response', async () => {
     const response = JSON.stringify({
-      evals: [{ id: 1, prompt: 'test', expected_output: 'ok', assertions: [] }],
+      evals: [{ id: 1, slug: 'test-case', prompt: 'test', expected_output: 'ok' }],
     });
     const inference = makeMockInference(response);
     const result = await generateEvals('skill', 'my-fallback-skill', inference);
@@ -102,7 +133,7 @@ describe('generateEvals', () => {
     const response = JSON.stringify({
       skill_name: 'skill',
       evals: [
-        { prompt: 'a prompt' }, // missing id, expected_output, files, assertions
+        { prompt: 'a prompt' }, // missing id, slug, expected_output, files
       ],
     });
     const inference = makeMockInference(response);
@@ -111,7 +142,6 @@ describe('generateEvals', () => {
     expect(result.evals[0].id).toBe(1); // auto-assigned index+1
     expect(result.evals[0].expected_output).toBe('');
     expect(result.evals[0].files).toEqual([]);
-    expect(result.evals[0].assertions).toEqual([]);
   });
 
   it('calls inference.chat with the generator prompt as user message', async () => {
@@ -135,9 +165,9 @@ describe('generateEvals', () => {
   it('preserves all evals from a large response', async () => {
     const evals = Array.from({ length: 8 }, (_, i) => ({
       id: i + 1,
+      slug: `case-${i + 1}`,
       prompt: `Prompt ${i + 1}`,
       expected_output: `Expected ${i + 1}`,
-      assertions: [`Assertion ${i + 1}`],
     }));
     const response = JSON.stringify({ skill_name: 'big-skill', evals });
     const inference = makeMockInference(response);
@@ -145,33 +175,5 @@ describe('generateEvals', () => {
 
     expect(result.evals).toHaveLength(8);
     expect(result.evals[7].id).toBe(8);
-  });
-});
-
-// --- writeEvalsJson ---
-
-describe('writeEvalsJson', () => {
-  it('maps scenarios to EvalsFile with correct structure', () => {
-    const result = writeEvalsJson('my-skill', [
-      { id: 1, prompt: 'hello', expected_output: 'greeting' },
-      { id: 2, prompt: 'bye', expected_output: 'farewell' },
-    ]);
-
-    expect(result.skill_name).toBe('my-skill');
-    expect(result.generated_by).toBe('snapeval interactive');
-    expect(result.evals).toHaveLength(2);
-    expect(result.evals[0]).toEqual({
-      id: 1,
-      prompt: 'hello',
-      expected_output: 'greeting',
-      files: [],
-      assertions: [],
-    });
-  });
-
-  it('handles empty scenarios array', () => {
-    const result = writeEvalsJson('empty-skill', []);
-    expect(result.evals).toEqual([]);
-    expect(result.skill_name).toBe('empty-skill');
   });
 });
