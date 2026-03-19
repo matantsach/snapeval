@@ -15,10 +15,14 @@ export class PluginAdapter implements E2ETestAdapter {
 
   async isAvailable(): Promise<boolean> {
     try {
-      // Copilot CLI must be installed and authenticated
+      // Copilot CLI must be installed
       execFileSync('copilot', ['--version'], { encoding: 'utf-8', stdio: 'pipe' });
-      // Auth token required for plugin to function
-      if (!process.env.COPILOT_GITHUB_TOKEN) return false;
+      // Verify copilot is authenticated by running a trivial prompt
+      execFileSync('copilot', ['-p', 'say ok', '-s', '--no-ask-user'], {
+        encoding: 'utf-8',
+        stdio: 'pipe',
+        timeout: 30_000,
+      });
       return true;
     } catch {
       return false;
