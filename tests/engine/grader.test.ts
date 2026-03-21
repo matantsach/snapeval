@@ -58,6 +58,60 @@ describe('gradeAssertions', () => {
     expect(written.summary.total).toBe(2);
   });
 
+  it('sends malformed JSON back to LLM for repair', async () => {
+    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'grader-'));
+
+    vi.mocked(mockInference.chat)
+      // First call: grading returns malformed JSON (unescaped quotes in evidence)
+      .mockResolvedValueOnce('{"results": [{"text": "check", "passed": true, "evidence": "Output says "hello" which matches"}]}')
+      // Second call: LLM fixes the JSON when asked
+      .mockResolvedValueOnce(JSON.stringify({
+        results: [{ text: 'check', passed: true, evidence: 'Output says hello which matches' }],
+      }));
+
+    const result = await gradeAssertions(
+      ['check'],
+      output,
+      tmpDir,
+      mockInference
+    );
+
+    expect(result).not.toBeNull();
+    expect(result!.assertion_results[0].passed).toBe(true);
+    expect(result!.assertion_results[0].evidence).toBe('Output says hello which matches');
+    // First call = grading, second call = fix request
+    expect(mockInference.chat).toHaveBeenCalledTimes(2);
+    // Fix prompt should reference the parse error
+    const fixCall = vi.mocked(mockInference.chat).mock.calls[1];
+    expect(fixCall[0][0].content).toContain('malformed');
+    // Debug file should exist
+    expect(fs.existsSync(path.join(tmpDir, 'grader-debug.txt'))).toBe(true);
+  });
+
+  it('fails gracefully when both grading and repair fail', async () => {
+    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'grader-'));
+
+    vi.mocked(mockInference.chat)
+      // First call: grading returns malformed JSON
+      .mockResolvedValueOnce('{"results": [{"text": "check", "passed": true, "evidence": "bad "quote" here"}]}')
+      // Second call: repair also returns malformed JSON
+      .mockResolvedValueOnce('still broken {{{');
+
+    const result = await gradeAssertions(
+      ['check'],
+      output,
+      tmpDir,
+      mockInference
+    );
+
+    // Should not throw — should gracefully degrade
+    expect(result).not.toBeNull();
+    expect(result!.assertion_results).toHaveLength(1);
+    expect(result!.assertion_results[0].passed).toBe(false);
+    expect(result!.assertion_results[0].evidence).toContain('malformed JSON');
+    expect(fs.existsSync(path.join(tmpDir, 'grader-debug.txt'))).toBe(true);
+  });
+
   it('handles script: assertions', async () => {
     tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'grader-'));
     const scriptsDir = path.join(tmpDir, 'scripts');

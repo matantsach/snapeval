@@ -45,10 +45,10 @@ ${output}
 ASSERTIONS TO GRADE:
 ${assertions.map((a, i) => `${i + 1}. ${a}`).join('\n')}
 
-Respond with JSON only:
+Respond with valid JSON only. IMPORTANT: Escape any double quotes inside string values with a backslash (\\"). Do not use unescaped double quotes inside evidence text.
 {
   "results": [
-    {"text": "<assertion text>", "passed": true/false, "evidence": "<quote from output supporting your verdict>"}
+    {"text": "<assertion text>", "passed": true/false, "evidence": "<quote from output — escape any double quotes>"}
   ]
 }`;
 }
@@ -85,16 +85,87 @@ function runScript(
   }
 }
 
+function stripAnsi(text: string): string {
+  // eslint-disable-next-line no-control-regex
+  return text.replace(/\x1b\[[0-9;]*m/g, '');
+}
+
 function extractJSON(text: string): string {
+  const clean = stripAnsi(text);
   // Try JSON-tagged fence first, then bare fence, then raw text
-  const jsonFence = text.match(/```json\s*([\s\S]*?)```/);
+  const jsonFence = clean.match(/```json\s*([\s\S]*?)```/);
   if (jsonFence) return jsonFence[1].trim();
   // Try parsing raw text as JSON before falling back to any fence
-  const trimmed = text.trim();
+  const trimmed = clean.trim();
   try { JSON.parse(trimmed); return trimmed; } catch { /* not raw JSON */ }
-  const anyFence = text.match(/```\s*([\s\S]*?)```/);
+  const anyFence = clean.match(/```\s*([\s\S]*?)```/);
   if (anyFence) return anyFence[1].trim();
+  // Last resort: find first { or [ and extract to its matching close
+  const start = trimmed.search(/[{[]/);
+  if (start >= 0) {
+    const sub = trimmed.slice(start);
+    try { JSON.parse(sub); return sub; } catch { /* not valid from here */ }
+  }
   return trimmed;
+}
+
+function parseGraderResponse(response: string): AssertionResult[] {
+  const jsonText = extractJSON(response);
+  const parsed = JSON.parse(jsonText);
+  const items = Array.isArray(parsed) ? parsed : parsed.results;
+  if (!Array.isArray(items)) throw new Error('No results array in grader response');
+  return items.map((r: any) => ({
+    text: r.text ?? '',
+    passed: Boolean(r.passed),
+    evidence: r.evidence ?? '',
+  }));
+}
+
+async function gradeLLMAssertions(
+  prompt: string,
+  assertions: string[],
+  runDir: string,
+  inference: InferenceAdapter,
+): Promise<AssertionResult[]> {
+  // Step 1: Grade assertions
+  const response = await inference.chat(
+    [{ role: 'user', content: prompt }],
+    { temperature: 0, responseFormat: 'json' }
+  );
+
+  try {
+    return parseGraderResponse(response);
+  } catch (firstErr) {
+    // Step 2: Validation loop — send malformed JSON back to LLM to fix
+    const debugPath = path.join(runDir, 'grader-debug.txt');
+    fs.writeFileSync(debugPath, `--- original response ---\n${response}\n--- parse error ---\n${firstErr}\n`);
+
+    const fixPrompt = `The following JSON is malformed. Fix it so it is valid JSON. Return ONLY the corrected JSON, nothing else.
+
+Error: ${firstErr}
+
+Malformed JSON:
+${extractJSON(response)}`;
+
+    try {
+      const fixedResponse = await inference.chat(
+        [{ role: 'user', content: fixPrompt }],
+        { temperature: 0, responseFormat: 'json' }
+      );
+      const results = parseGraderResponse(fixedResponse);
+      // Append fix success to debug log
+      fs.appendFileSync(debugPath, `\n--- fix succeeded ---\n${extractJSON(fixedResponse)}\n`);
+      return results;
+    } catch (fixErr) {
+      // Step 3: Both attempts failed — fail gracefully
+      fs.appendFileSync(debugPath, `\n--- fix also failed ---\n${fixErr}\n`);
+      return assertions.map((text) => ({
+        text,
+        passed: false,
+        evidence: `Grading failed: LLM returned malformed JSON that could not be repaired. See ${debugPath}`,
+      }));
+    }
+  }
 }
 
 export async function gradeAssertions(
@@ -125,14 +196,8 @@ export async function gradeAssertions(
 
   if (llmAssertions.length > 0) {
     const prompt = buildGradingPrompt(llmAssertions, output.raw, output.files);
-    const response = await inference.chat(
-      [{ role: 'user', content: prompt }],
-      { temperature: 0, responseFormat: 'json' }
-    );
-    const parsed = JSON.parse(extractJSON(response));
-    for (const r of parsed.results) {
-      results.push({ text: r.text, passed: Boolean(r.passed), evidence: r.evidence });
-    }
+    const graded = await gradeLLMAssertions(prompt, llmAssertions, runDir, inference);
+    results.push(...graded);
   }
 
   const passed = results.filter(r => r.passed).length;
