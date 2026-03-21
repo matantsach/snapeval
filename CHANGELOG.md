@@ -1,5 +1,16 @@
 # Changelog
 
+## [2.0.0](https://github.com/matantsach/snapeval/compare/snapeval-v1.8.0...snapeval-v2.0.0) (2026-03-21)
+
+
+### ⚠ BREAKING CHANGES
+
+* The `snapeval init` CLI command has been removed. Eval specs (evals.json) should be authored by the orchestrating skill or written manually instead of being generated via `snapeval init`.
+
+### Features
+
+* remove init command — evals.json is authored externally ([bc30f44](https://github.com/matantsach/snapeval/commit/bc30f44a6f9556f84fdb7cd9d1ec896ace57f0a9))
+
 ## [1.8.0](https://github.com/matantsach/snapeval/compare/snapeval-v1.7.0...snapeval-v1.8.0) (2026-03-21)
 
 
