@@ -17,6 +17,7 @@ describe('config', () => {
       inference: 'auto',
       workspace: '../{skill_name}-workspace',
       runs: 1,
+      concurrency: 1,
     });
   });
 

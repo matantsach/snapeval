@@ -7,6 +7,7 @@ export const DEFAULT_CONFIG: SnapevalConfig = {
   inference: 'auto',
   workspace: '../{skill_name}-workspace',
   runs: 1,
+  concurrency: 1,
 };
 
 function loadConfigFile(dirPath: string): Partial<SnapevalConfig> | null {

@@ -10,7 +10,7 @@ export async function reviewCommand(
   skillPath: string,
   harness: Harness,
   inference: InferenceAdapter,
-  options: { workspace?: string; runs?: number; oldSkill?: string; noOpen?: boolean }
+  options: { workspace?: string; runs?: number; oldSkill?: string; noOpen?: boolean; concurrency?: number }
 ): Promise<void> {
   const results = await evalCommand(skillPath, harness, inference, options);
 

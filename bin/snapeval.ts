@@ -24,6 +24,7 @@ program
   .option('--inference <inference>', 'Inference adapter to use')
   .option('--workspace <path>', 'Workspace directory')
   .option('--runs <n>', 'Runs per eval for statistical significance', '1')
+  .option('--concurrency <n>', 'Number of eval cases to run in parallel (1-10)', '1')
   .option('--old-skill <path>', 'Compare against old skill version instead of no-skill')
   .option('--verbose', 'Verbose output')
   .argument('[skill-dir]', 'Path to skill directory', process.cwd())
@@ -36,6 +37,7 @@ program
           inference: opts.inference as string,
           workspace: opts.workspace as string,
           runs: opts.runs ? parseInt(opts.runs as string, 10) : undefined,
+          concurrency: opts.concurrency ? parseInt(opts.concurrency as string, 10) : undefined,
         },
         process.cwd(), skillPath
       );
@@ -45,6 +47,7 @@ program
       const results = await evalCommand(skillPath, harness, inference, {
         workspace: config.workspace,
         runs: config.runs,
+        concurrency: config.concurrency,
         oldSkill: opts.oldSkill as string | undefined,
       });
 
@@ -63,6 +66,7 @@ program
   .option('--inference <inference>', 'Inference adapter to use')
   .option('--workspace <path>', 'Workspace directory')
   .option('--runs <n>', 'Runs per eval for statistical significance', '1')
+  .option('--concurrency <n>', 'Number of eval cases to run in parallel (1-10)', '1')
   .option('--old-skill <path>', 'Compare against old skill version instead of no-skill')
   .option('--no-open', 'Do not open browser')
   .option('--verbose', 'Verbose output')
@@ -76,6 +80,7 @@ program
           inference: opts.inference as string,
           workspace: opts.workspace as string,
           runs: opts.runs ? parseInt(opts.runs as string, 10) : undefined,
+          concurrency: opts.concurrency ? parseInt(opts.concurrency as string, 10) : undefined,
         },
         process.cwd(), skillPath
       );
@@ -85,6 +90,7 @@ program
       await reviewCommand(skillPath, harness, inference, {
         workspace: config.workspace,
         runs: config.runs,
+        concurrency: config.concurrency,
         oldSkill: opts.oldSkill as string | undefined,
         noOpen: opts.open === false,
       });
