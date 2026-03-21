@@ -28,26 +28,40 @@ Triggered by: "evaluate", "test", "set up evals", "evaluate my skill", "how good
 
 **STOP. Do not proceed to Phase 2 until the user confirms your understanding is correct. Wait for the user to respond.**
 
-### Phase 2 — Interview
+### Phase 2 — Deep Skill Analysis
 
-The goal here is to understand what matters to the user before generating any test scenarios. Ask 2-3 focused questions (one at a time) to learn what the user actually cares about testing. Adapt questions based on the skill type and what you learned from reading the SKILL.md.
+Before asking the user anything, do your own homework. Study the skill thoroughly to map its surface area:
 
-Good questions to draw from (pick the most relevant, don't ask all of them):
+1. **Re-read the SKILL.md carefully** — not just the summary, but every instruction, rule, format spec, and example
+2. **Map the behavior space** — identify every distinct thing the skill does (e.g., "generates commit messages", "handles empty diffs", "detects breaking changes")
+3. **Map the input space** — what kinds of inputs does it accept? What dimensions vary? (language, length, complexity, format, edge cases)
+4. **Identify implicit assumptions** — what does the skill assume about context, user intent, or environment that could break?
+5. **Spot gaps and ambiguities** — where are the instructions vague, contradictory, or silent? These are often where failures hide
 
-- **Users**: "Who uses this skill? What do they typically ask it to do?"
-- **Failure modes**: "What's the worst thing that could go wrong? Any cases where it's given bad output before?"
-- **Edge cases**: "Are there tricky inputs you're worried about — unusual formats, empty input, adversarial prompts?"
-- **Output quality**: "What does a really good output look like vs a mediocre one? Is there a specific format it needs to follow?"
-- **Coverage priorities**: "What matters more to you — testing the happy path works reliably, or catching edge case failures?"
-- **Real-world context**: "Is there a specific scenario that motivated you to test this? Something that broke or concerned you?"
+Present this analysis to the user as a brief skill map:
+> "I've analyzed your skill in depth. Here's what I see:
+> - **N core behaviors**: [list them]
+> - **N input dimensions**: [list them]
+> - **N potential weak spots**: [list them — gaps, ambiguities, untested assumptions]"
 
-Ask ONE question at a time. Wait for the answer before asking the next one. Two to three questions is usually enough — don't turn this into an interrogation. If the user seems impatient or says "just test it", respect that and move to Phase 3 with reasonable defaults.
+### Phase 3 — Interview
+
+Now ask targeted questions to fill gaps your analysis couldn't answer. You've done the work — your questions should be specific and informed, not generic.
+
+Ask 2-3 focused questions (one at a time) based on what you found in Phase 2. Examples:
+
+- "Your skill says [X] but doesn't specify what happens when [Y]. What should it do?"
+- "I see the skill handles [A] and [B] but doesn't mention [C]. Is that a case you care about?"
+- "The output format section says [X]. In practice, do your users need exactly that, or is there flexibility?"
+- "I noticed the skill doesn't address [edge case]. Has that come up, or is it not a concern?"
+
+Ask ONE question at a time. Wait for the answer before asking the next one. Two to three questions is usually enough — don't turn this into an interrogation. If the user seems impatient or says "just test it", respect that and move to Phase 4 (Propose Scenarios) with reasonable defaults.
 
 **STOP after each question. Wait for the user to respond before asking the next question or moving on.**
 
-### Phase 3 — Propose Scenarios
+### Phase 4 — Propose Scenarios
 
-Using what you learned from the interview, generate 5-8 test scenarios tailored to the user's concerns.
+Using your analysis and the user's answers, generate 5-8 test scenarios tailored to what actually matters.
 
 1. Present a brief skill profile: "Based on what you told me, I'll focus on [key concerns]. Your skill has N core behaviors and I see N areas worth testing."
 2. Present scenarios as a numbered list. For each scenario show:
@@ -58,14 +72,14 @@ Using what you learned from the interview, generate 5-8 test scenarios tailored 
 
 **STOP. Do not write evals.json or run any commands until the user approves the scenario list (or says "just run it", "looks good", "I trust you", etc). Wait for the user to respond.**
 
-### Phase 4 — Handle Feedback
+### Phase 5 — Handle Feedback
 
 - If the user wants changes, adjust conversationally
 - "Drop 3, add one about empty input" → adjust the list and re-present
 - Loop until confirmed
-- If the user says "just run it", "looks good", "I trust you", or similar → skip to Phase 5 immediately
+- If the user says "just run it", "looks good", "I trust you", or similar → skip to Phase 6 immediately
 
-### Phase 5 — Write evals.json & Run
+### Phase 6 — Write evals.json & Run
 
 1. Write the approved scenarios to `<skill-path>/evals/evals.json`. Format:
    ```json
