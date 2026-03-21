@@ -29,6 +29,21 @@ Three pre-built skills with SKILL.md, evals.json, and optional scripts. These ar
 - LLM assertions only (no scripts)
 - SKILL-v2.md adds: scope prefix support, breaking change detection
 
+Example evals.json entry:
+```json
+{
+  "id": 1,
+  "prompt": "Generate a commit message for this diff:\n```diff\n- const x = 1;\n+ const x = 2;\n```",
+  "expected_output": "A conventional commit message like 'fix: update constant value'",
+  "files": [],
+  "assertions": [
+    "Output starts with a conventional commit prefix (feat:, fix:, chore:, refactor:, docs:, test:)",
+    "Output is a single line under 72 characters",
+    "Output does not include the diff itself"
+  ]
+}
+```
+
 #### `code-reviewer` (Complex)
 
 **Purpose:** Analyze PR files, identify bugs and style issues, output structured feedback with severity.
@@ -38,6 +53,21 @@ Three pre-built skills with SKILL.md, evals.json, and optional scripts. These ar
 - Mix of LLM assertions and `script:` assertions (validate JSON structure, check severity enum values)
 - SKILL-v2.md adds: severity levels (critical/warning/info) to output format
 
+Example evals.json entry with script assertion:
+```json
+{
+  "id": 1,
+  "prompt": "Review this code for bugs:\n```js\nfunction add(a, b) { return a - b; }\n```",
+  "expected_output": "Identifies the subtraction bug in the add function",
+  "files": [],
+  "assertions": [
+    "Output identifies that the function uses subtraction (-) instead of addition (+)",
+    "Output includes a suggested fix",
+    "script:validate-json-structure.sh"
+  ]
+}
+```
+
 #### `api-doc-generator` (Medium)
 
 **Purpose:** Given an OpenAPI spec, generate human-readable markdown API docs.
@@ -46,6 +76,32 @@ Three pre-built skills with SKILL.md, evals.json, and optional scripts. These ar
 - 5 eval cases: simple CRUD API, nested schemas, auth endpoints, empty spec, webhook endpoints
 - Mix of LLM assertions and `script:` assertions (validate markdown headers, check endpoint coverage)
 - SKILL-v2.md adds: example request/response blocks in generated docs
+
+### evals.json Format Reference
+
+All evals.json files must conform to the `EvalsFile` schema from `src/types.ts`:
+
+```json
+{
+  "skill_name": "<skill-name>",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "The user's input",
+      "expected_output": "Description of what correct output looks like",
+      "files": [],
+      "assertions": [
+        "Plain English assertion (graded by LLM)",
+        "script:my-validator.sh"
+      ]
+    }
+  ]
+}
+```
+
+**Assertion conventions:**
+- **LLM assertions:** Plain English strings. Must be concrete and verifiable — "Output contains a YAML block with an 'id' field" not "Output is correct."
+- **Script assertions:** Prefixed with `script:`. The filename is relative to `<skill-dir>/evals/scripts/`. The script receives the output directory as its first argument and passes on exit code 0.
 
 ### Part B: Persona Agents
 
@@ -94,24 +150,27 @@ Each persona has two files: PROFILE.md (who they are) and AGENT_PROMPT.md (execu
 
 Each persona executes 3 stages against their assigned skill. The skill and evals are pre-built — personas focus on the snapeval experience.
 
+All commands run from the repo root. All stages use the explicit skill path.
+
 **Stage 1 — First Eval Run**
 - Run `npx snapeval eval personas/skills/<skill>` on the pre-built skill
 - Examine all output artifacts (grading.json, benchmark.json, terminal output)
 - Report on: Was the output clear? Did they understand what happened? Any errors?
 
 **Stage 2 — Re-check After Skill Change**
-- Copy SKILL-v2.md over SKILL.md (pre-defined change)
-- Re-run `npx snapeval eval`
+- Copy SKILL-v2.md over SKILL.md (`cp personas/skills/<skill>/SKILL-v2.md personas/skills/<skill>/SKILL.md`)
+- Re-run `npx snapeval eval personas/skills/<skill>`
 - Compare new pass rate against Stage 1 results
 - Report on: Was the change in results clear? Is grading evidence trustworthy? Any false positives/negatives?
+- Note: SKILL.md is overwritten. Re-running Stage 1 requires restoring the original via `git checkout`.
 
 **Stage 3 — Add New Evals**
-- Edit evals.json in place — add a new eval case relevant to their skill domain
-- Re-run `npx snapeval eval`
+- Edit evals.json in place — append a new eval case relevant to their skill domain
+- Re-run `npx snapeval eval personas/skills/<skill>`
 - Report on: Was extending evals smooth? Did the new case integrate cleanly? Any issues?
 
 **Persona-specific bonus stages:**
-- Jordan (Stage 4): Dig into benchmark.json numbers, question stddev, run with `--runs 3`
+- Jordan (Stage 4): Dig into benchmark.json numbers, question stddev, run with `--runs 3`. Note: current `--runs` implementation only retains the last run's grading per eval case — stddev in benchmark.json comes from variance across eval cases, not repeated measurements. This is a known gap Jordan may surface.
 - Sam (Stage 4): Parse artifacts programmatically, test exit codes on failure, validate headless operation
 
 ### Feedback Format
@@ -183,6 +242,12 @@ personas/
     ├── PROFILE.md
     └── AGENT_PROMPT.md
 ```
+
+## Environment Prerequisites
+
+- **Harness:** `copilot-cli` (default). Copilot CLI must be installed and authenticated (`npm install -g @github/copilot`). Alternatively, pass `--harness <other>` if another harness is available.
+- **Inference:** `auto` (default). Resolves to Copilot CLI or GitHub Models API via `GITHUB_TOKEN`. No additional config needed if Copilot CLI is installed.
+- No `snapeval.config.json` is needed in the persona skill directories — CLI defaults are sufficient for the dogfooding workflow.
 
 ## Non-Goals
 
