@@ -133,7 +133,7 @@ describe.skipIf(!copilotAvailable)('CLI E2E', () => {
     const skillDir = copyGreeterSkill({ skillMdOnly: true });
     const { result } = await noEvalsJson(adapter, skillDir);
 
-    expect(result.exitCode).toBe(2);
+    expect(result.exitCode).toBe(3);
     expect(result.stderr).toMatch(/evals\.json/i);
   });
 });
