@@ -32,6 +32,8 @@ jobs:
     if: ${{ github.event_name == 'push' || !github.event.pull_request.head.repo.fork }}
     env:
       COPILOT_GITHUB_TOKEN: ${{ secrets.COPILOT_GITHUB_TOKEN }}
+      GITHUB_TOKEN: ${{ secrets.COPILOT_GITHUB_TOKEN }}
+      GH_TOKEN: ${{ secrets.COPILOT_GITHUB_TOKEN }}
     steps:
       - uses: actions/checkout@v6
       - uses: actions/setup-node@v6

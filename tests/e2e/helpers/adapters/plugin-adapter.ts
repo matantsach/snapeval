@@ -61,6 +61,7 @@ export class PluginAdapter implements E2ETestAdapter {
         encoding: 'utf-8',
         maxBuffer: 10 * 1024 * 1024,
         timeout: 300_000,
+        env: { ...process.env },
       }, (error, stdout, stderr) => {
         resolve({
           stdout: stdout ?? '',
