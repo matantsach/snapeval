@@ -6,6 +6,7 @@ import {
   createOldSkillVersion,
   createEmptyDir,
   cleanupAll,
+  getWorkspaceDir,
 } from './helpers/fixtures.js';
 import {
   assertEvalsJson,
@@ -21,7 +22,6 @@ import {
   assertBenchmark,
   assertFeedback,
   assertCleanState,
-  findWorkspaceDir,
   listEvalDirs,
 } from './helpers/assertions.js';
 import { generateEvals } from './helpers/stories/generate-evals.js';
@@ -44,7 +44,9 @@ describe.skipIf(!sdkAvailable)('SDK E2E', () => {
 
   it('US1: init generates evals.json from SKILL.md', async () => {
     const skillDir = copyGreeterSkill({ skillMdOnly: true });
-    await generateEvals(adapter, skillDir);
+    const { initResult } = await generateEvals(adapter, skillDir);
+
+    expect(initResult.exitCode).toBe(0);
 
     assertEvalsJson(skillDir);
     assertEvalsRelevance(skillDir, GREETER_KEYWORDS);
@@ -54,9 +56,11 @@ describe.skipIf(!sdkAvailable)('SDK E2E', () => {
   it('US2: eval with assertions produces all spec artifacts', async () => {
     const skillDir = copyGreeterSkill({ skillMdOnly: true });
     writeMinimalEvals(skillDir, { withAssertions: true });
-    await evalWithAssertions(adapter, skillDir);
+    const workspace = getWorkspaceDir(skillDir);
+    const { evalResult } = await evalWithAssertions(adapter, skillDir, workspace);
 
-    const workspace = findWorkspaceDir(skillDir);
+    expect(evalResult.exitCode).toBe(0);
+
     assertIterationDir(workspace, 1);
 
     const evalDirs = listEvalDirs(`${workspace}/iteration-1`);
@@ -79,14 +83,17 @@ describe.skipIf(!sdkAvailable)('SDK E2E', () => {
     const skillDir = copyGreeterSkill({ skillMdOnly: true });
     writeMinimalEvals(skillDir, { withAssertions: false });
 
-    await evalWithoutAssertions(adapter, skillDir);
+    const workspace = getWorkspaceDir(skillDir);
+    const { evalResult } = await evalWithoutAssertions(adapter, skillDir, workspace);
+    expect(evalResult.exitCode).toBe(0);
 
-    const workspace = findWorkspaceDir(skillDir);
     const evalDirs = listEvalDirs(`${workspace}/iteration-1`);
 
     for (const evalDir of evalDirs) {
       assertTiming(`${evalDir}/with_skill`);
       assertTiming(`${evalDir}/without_skill`);
+      assertOutput(`${evalDir}/with_skill`);
+      assertOutput(`${evalDir}/without_skill`);
       assertNoGrading(`${evalDir}/with_skill`);
       assertNoGrading(`${evalDir}/without_skill`);
     }
@@ -99,22 +106,29 @@ describe.skipIf(!sdkAvailable)('SDK E2E', () => {
     writeMinimalEvals(skillDir);
     const oldSkillDir = createOldSkillVersion(skillDir);
 
-    await evalOldSkill(adapter, skillDir, oldSkillDir);
+    const workspace = getWorkspaceDir(skillDir);
+    const { evalResult } = await evalOldSkill(adapter, skillDir, oldSkillDir, workspace);
+    expect(evalResult.exitCode).toBe(0);
 
-    const workspace = findWorkspaceDir(skillDir);
     const evalDirs = listEvalDirs(`${workspace}/iteration-1`);
 
     for (const evalDir of evalDirs) {
       assertOldSkillDir(evalDir);
+      assertTiming(`${evalDir}/with_skill`);
+      assertTiming(`${evalDir}/old_skill`);
+      assertOutput(`${evalDir}/with_skill`);
+      assertOutput(`${evalDir}/old_skill`);
     }
   });
 
   it('US5: review produces feedback.json', async () => {
     const skillDir = copyGreeterSkill({ skillMdOnly: true });
     writeMinimalEvals(skillDir, { withAssertions: true });
-    await reviewFlow(adapter, skillDir);
+    const workspace = getWorkspaceDir(skillDir);
+    const { reviewResult } = await reviewFlow(adapter, skillDir, workspace);
 
-    const workspace = findWorkspaceDir(skillDir);
+    expect(reviewResult.exitCode).toBe(0);
+
     assertIterationDir(workspace, 1);
     assertBenchmark(`${workspace}/iteration-1`);
     assertFeedback(`${workspace}/iteration-1`);
@@ -124,19 +138,26 @@ describe.skipIf(!sdkAvailable)('SDK E2E', () => {
     const skillDir = copyGreeterSkill({ skillMdOnly: true });
     writeMinimalEvals(skillDir);
 
-    await multiIteration(adapter, skillDir, undefined, 3);
+    const workspace = getWorkspaceDir(skillDir);
+    const { results } = await multiIteration(adapter, skillDir, workspace, 3);
+    for (const r of results) {
+      expect(r.exitCode).toBe(0);
+    }
 
-    const workspace = findWorkspaceDir(skillDir);
     assertIterationDir(workspace, 1);
     assertIterationDir(workspace, 2);
     assertIterationDir(workspace, 3);
+    assertBenchmark(`${workspace}/iteration-1`);
+    assertBenchmark(`${workspace}/iteration-2`);
+    assertBenchmark(`${workspace}/iteration-3`);
   });
 
   it('US-ERR1: no SKILL.md produces error', async () => {
     const emptyDir = createEmptyDir();
     const { result } = await noSkillMd(adapter, emptyDir);
 
-    expect(result.stdout + result.stderr).toMatch(/SKILL\.md|not found|error/i);
+    expect(result.exitCode).toBe(2);
+    expect(result.stderr).toMatch(/SKILL\.md|not found/i);
     assertCleanState(emptyDir);
   });
 
@@ -144,6 +165,7 @@ describe.skipIf(!sdkAvailable)('SDK E2E', () => {
     const skillDir = copyGreeterSkill({ skillMdOnly: true });
     const { result } = await noEvalsJson(adapter, skillDir);
 
-    expect(result.stdout + result.stderr).toMatch(/evals\.json|init|error/i);
+    expect(result.exitCode).toBe(2);
+    expect(result.stderr).toMatch(/evals\.json|init/i);
   });
 });
