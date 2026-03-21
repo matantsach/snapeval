@@ -170,6 +170,23 @@ export async function evalCommand(
     const withSkillGrading = averageGradings(allGradings.map(g => g.withSkill));
     const withoutSkillGrading = averageGradings(allGradings.map(g => g.withoutSkill));
 
+    // When runs > 1, overwrite grading.json with averaged results so
+    // artifacts match the benchmark (not just the last run's raw data)
+    if (runs > 1) {
+      if (withSkillGrading) {
+        fs.writeFileSync(
+          path.join(evalDir, 'with_skill', 'grading.json'),
+          JSON.stringify(withSkillGrading, null, 2),
+        );
+      }
+      if (withoutSkillGrading) {
+        fs.writeFileSync(
+          path.join(evalDir, baselineVariant, 'grading.json'),
+          JSON.stringify(withoutSkillGrading, null, 2),
+        );
+      }
+    }
+
     return {
       evalId: evalCase.id,
       slug,
