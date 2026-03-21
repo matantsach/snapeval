@@ -116,4 +116,4 @@ Never show raw stack traces. Translate errors into plain language with a suggest
 - Never ask the user to write evals.json or any config files manually
 - Always read the target skill's SKILL.md before generating scenarios
 - Only reference CLI commands that exist: `eval`, `review`
-- Only reference CLI flags that exist: `--harness`, `--inference`, `--workspace`, `--runs`, `--old-skill`, `--no-open`, `--verbose`
+- Only reference CLI flags that exist: `--harness`, `--inference`, `--workspace`, `--runs`, `--concurrency`, `--only`, `--threshold`, `--old-skill`, `--no-open`, `--verbose`

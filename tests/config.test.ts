@@ -13,7 +13,7 @@ describe('config', () => {
 
   it('DEFAULT_CONFIG has spec-aligned fields', () => {
     expect(DEFAULT_CONFIG).toEqual({
-      harness: 'copilot-cli',
+      harness: 'copilot-sdk',
       inference: 'auto',
       workspace: '../{skill_name}-workspace',
       runs: 1,

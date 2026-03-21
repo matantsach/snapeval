@@ -7,6 +7,7 @@ import { evalCommand } from '../src/commands/eval.js';
 import { reviewCommand } from '../src/commands/review.js';
 import { TerminalReporter } from '../src/adapters/report/terminal.js';
 import { SnapevalError } from '../src/errors.js';
+import { stopClient } from '../src/adapters/copilot-sdk-client.js';
 import * as path from 'node:path';
 
 const program = new Command();
@@ -116,6 +117,9 @@ program
       process.exit(0);
     } catch (err) { handleError(err); }
   });
+
+// Clean up SDK client on exit (no-op if never started)
+process.on('exit', () => { stopClient().catch(() => {}); });
 
 function handleError(err: unknown): never {
   if (err instanceof SnapevalError) {

@@ -79,10 +79,11 @@ describe('type definitions compile correctly', () => {
 
   it('SnapevalConfig has new shape', () => {
     const config: SnapevalConfig = {
-      harness: 'copilot-cli',
+      harness: 'copilot-sdk',
       inference: 'auto',
       workspace: '../{skill_name}-workspace',
       runs: 1,
+      concurrency: 1,
     };
     expect(config).not.toHaveProperty('adapter');
     expect(config).not.toHaveProperty('budget');
