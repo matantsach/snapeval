@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.8.0](https://github.com/matantsach/snapeval/compare/snapeval-v1.7.0...snapeval-v1.8.0) (2026-03-21)
+
+
+### Features
+
+* adapter-extensible E2E tests (CLI, Plugin, SDK) ([#32](https://github.com/matantsach/snapeval/issues/32)) ([d658cb1](https://github.com/matantsach/snapeval/commit/d658cb1a66bbc0dd733efc34fbce78d20363738f))
+
 ## [1.7.0](https://github.com/matantsach/snapeval/compare/snapeval-v1.6.0...snapeval-v1.7.0) (2026-03-19)
 
 
