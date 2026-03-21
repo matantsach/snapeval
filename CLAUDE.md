@@ -62,3 +62,31 @@ Each layer is an interface in `src/types.ts` with implementations in `src/adapte
 
 - Strict mode, ES2022 target, ESNext modules with bundler resolution.
 - ESM package (`"type": "module"` in package.json). Use `.js` extensions in imports.
+
+## Git & Release Discipline
+
+### Never push to main
+
+Every change goes through branch → PR → CI → merge. No exceptions for "quick fixes" or follow-ups.
+
+### Conventional commits for release-please
+
+| Change type | Prefix | Release |
+|---|---|---|
+| New feature | `feat:` | minor bump |
+| Breaking change (removed command, changed API) | `feat!:` | major bump |
+| Bug fix | `fix:` | patch bump |
+| Docs, tests, refactoring, cleanup | `chore:` | **no release** |
+
+Pick the prefix that matches the change semantics. Removing a CLI command is `feat!:`, not `chore:`.
+
+## Pre-PR Checklist
+
+Before creating a PR, verify ALL consumers of changed/removed features are updated. Grep broadly — not just code imports:
+
+- [ ] `skills/snapeval/SKILL.md` — skill instructions reference correct commands, flags, and workflows
+- [ ] `CLAUDE.md` — architecture docs, core flow, command counts
+- [ ] `bin/snapeval.ts` — CLI entry point
+- [ ] Error messages in `src/` — no references to removed commands
+- [ ] E2E test helpers (`tests/e2e/helpers/`) — types, adapters, stories
+- [ ] `plugin.json`, `.claude-plugin/plugin.json` — plugin metadata if applicable
