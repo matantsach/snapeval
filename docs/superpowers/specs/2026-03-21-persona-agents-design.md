@@ -86,6 +86,8 @@ After SKILL-v2.md is applied (Stage 2), evals should also use:
 - Structured input (OpenAPI JSON), formatted markdown output
 - 5 eval cases: simple CRUD API, nested schemas, auth endpoints, empty spec, webhook endpoints
 - Mix of LLM assertions and `script:` assertions (validate markdown headers, check endpoint coverage)
+- `validate-markdown-headers.sh` — verifies output contains properly formatted markdown headers (h1, h2, etc.)
+- `check-endpoint-coverage.sh` — verifies every path defined in the input OpenAPI spec appears as a section in the generated markdown output
 - SKILL-v2.md adds: example request/response blocks in generated docs
 
 Example evals.json entry with script assertion:
@@ -180,28 +182,30 @@ Each persona has two files: PROFILE.md (who they are) and AGENT_PROMPT.md (execu
 
 Each persona executes 3 stages against their assigned skill. The skill and evals are pre-built — personas focus on the snapeval experience.
 
-All commands run from the repo root using `npx tsx bin/snapeval.ts` (dev invocation — the package is not globally installed). All stages use the explicit skill path.
+All commands run from the repo root using `npx tsx bin/snapeval.ts` (dev invocation — the package is not globally installed). All stages use the explicit skill path and the `--workspace` flag.
+
+**Important:** The default workspace template (`../{skill_name}-workspace`) resolves relative to CWD, not the skill directory. Running from the repo root without `--workspace` creates the workspace one level above the repo. All persona commands must pass `--workspace personas/skills/<skill>-workspace` to place artifacts as siblings of the skill directory.
 
 **Stage 1 — First Eval Run**
-- Run `npx tsx bin/snapeval.ts eval personas/skills/<skill>` on the pre-built skill
+- Run `npx tsx bin/snapeval.ts eval personas/skills/<skill> --workspace personas/skills/<skill>-workspace` on the pre-built skill
 - Examine all output artifacts (grading.json, benchmark.json, terminal output)
 - Report on: Was the output clear? Did they understand what happened? Any errors?
 
 **Stage 2 — Re-check After Skill Change**
 - Copy SKILL-v2.md over SKILL.md (`cp personas/skills/<skill>/SKILL-v2.md personas/skills/<skill>/SKILL.md`)
-- Re-run `npx tsx bin/snapeval.ts eval personas/skills/<skill>`
-- Compare new pass rate against Stage 1 results
+- Re-run `npx tsx bin/snapeval.ts eval personas/skills/<skill> --workspace personas/skills/<skill>-workspace`
+- Compare new pass rate against Stage 1 results (previous iteration in same workspace)
 - Report on: Was the change in results clear? Is grading evidence trustworthy? Any false positives/negatives?
 - Note: SKILL.md is overwritten. Re-running Stage 1 requires restoring the original via `git checkout`.
 
 **Stage 3 — Add New Evals**
 - Edit evals.json in place — append a new eval case relevant to their skill domain
-- Re-run `npx tsx bin/snapeval.ts eval personas/skills/<skill>`
+- Re-run `npx tsx bin/snapeval.ts eval personas/skills/<skill> --workspace personas/skills/<skill>-workspace`
 - Report on: Was extending evals smooth? Did the new case integrate cleanly? Any issues?
 
 **Persona-specific bonus stages:**
 - Jordan (Stage 4): Dig into benchmark.json numbers, question stddev, run with `--runs 3`. Jordan should independently evaluate whether `--runs` produces the statistical behavior they expect and file feedback on what they observe.
-- Sam (Stage 4): Parse artifacts programmatically, test exit codes on failure, validate headless operation. Output artifacts land in a workspace directory (default: `<skill-name>-workspace/` as a sibling of the skill directory, e.g., `personas/skills/api-doc-generator-workspace/`). The workspace contains `iteration-N/eval-{slug}/{with_skill,without_skill}/` subdirectories. The `eval` command prints the iteration directory path to stdout. Sam should discover and parse artifacts from this path.
+- Sam (Stage 4): Parse artifacts programmatically, test exit codes on failure, validate headless operation. With `--workspace personas/skills/<skill>-workspace`, artifacts land at `personas/skills/<skill>-workspace/iteration-N/eval-{id}/{with_skill,without_skill}/`. The `eval` command prints `Results at <absolute-path>` to stdout (note the `Results at ` prefix — Sam will need to parse around it, e.g., `| sed 's/Results at //'`). Key artifacts per eval: `grading.json`, `timing.json` in each run dir; `benchmark.json` in the iteration dir.
 
 ### Known Gaps (for agent prompt authors)
 
