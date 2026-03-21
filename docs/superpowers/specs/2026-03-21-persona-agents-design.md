@@ -133,7 +133,7 @@ All evals.json files must conform to the `EvalsFile` schema from `src/types.ts`:
 
 **Assertion conventions:**
 - **LLM assertions:** Plain English strings. Must be concrete and verifiable — "Output contains a YAML block with an 'id' field" not "Output is correct."
-- **Script assertions:** Prefixed with `script:`. The filename is relative to `<skill-dir>/evals/scripts/`. The script receives the `outputs/` subdirectory as its first argument (e.g., `iteration-1/eval-1/with_skill/outputs/`). The actual output is at `$1/output.txt`. Scripts pass on exit code 0. Scripts must be executable (`chmod +x`). If not executable, the grader reports `passed: false` with a misleading "non-zero exit code" message — there is no setup-time diagnostic.
+- **Script assertions:** Prefixed with `script:`. The filename is relative to `<skill-dir>/evals/scripts/`. The script receives the `outputs/` subdirectory as its first argument (e.g., `iteration-1/eval-1/with_skill/outputs/`). The actual output is at `$1/output.txt`. Scripts pass on exit code 0. Scripts must be executable (`chmod +x`). If not executable, `execFileSync` throws an `EACCES` system error; the grader catches it and reports `passed: false` with the spawn error string as evidence — there is no clear "permission denied" diagnostic.
 
 ### Part B: Persona Agents
 
@@ -212,7 +212,7 @@ All commands run from the repo root using `npx tsx bin/snapeval.ts` (dev invocat
 These are real snapeval behaviors that personas may surface. Do not pre-seed these conclusions in AGENT_PROMPT.md — let personas discover them independently and file feedback.
 
 - `--runs N` only retains the last run's grading per eval case. Stddev in benchmark.json comes from variance across eval cases, not repeated measurements. Expected feedback: `category: "missing_feature"`, `severity: "slows_down"`.
-- Script assertion failures due to missing `chmod +x` produce misleading "non-zero exit code" errors with no setup-time diagnostic. Expected feedback: `category: "ux"`, `severity: "blocks_workflow"`.
+- Script assertion failures due to missing `chmod +x` produce misleading errors — the grader catches the system-level `EACCES` error from Node's `execFileSync` and reports it as `passed: false` with the spawn error in the evidence field, not a clear "permission denied — run chmod +x" diagnostic. Expected feedback: `category: "ux"`, `severity: "blocks_workflow"`.
 
 ### Feedback Format
 
