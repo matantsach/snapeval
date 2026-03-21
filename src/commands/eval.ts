@@ -6,6 +6,7 @@ import type {
   EvalsFile,
   EvalResults,
   EvalRunResult,
+  GradingResult,
 } from '../types.js';
 import { WorkspaceManager } from '../engine/workspace.js';
 import { runEval } from '../engine/runner.js';
@@ -86,6 +87,12 @@ export async function evalCommand(
 
   const ws = new WorkspaceManager(skillPath, options.workspace);
   const iterationDir = ws.createIteration();
+
+  // Track which SKILL.md was used for this iteration
+  const skillMdPath = path.join(skillPath, 'SKILL.md');
+  if (fs.existsSync(skillMdPath)) {
+    fs.copyFileSync(skillMdPath, path.join(iterationDir, 'SKILL.md.snapshot'));
+  }
   const runs = options.runs ?? 1;
   const concurrency = Math.min(Math.max(options.concurrency ?? 1, 1), MAX_CONCURRENCY);
   const baselineVariant = options.oldSkill ? 'old_skill' : 'without_skill';
@@ -98,32 +105,40 @@ export async function evalCommand(
   });
 
   const tasks = evalDirs.map(({ evalCase, slug, evalDir }) => async (): Promise<EvalRunResult> => {
+    const assertions = evalCase.assertions ?? [];
+    const allGradings: { withSkill: GradingResult | null; withoutSkill: GradingResult | null }[] = [];
     let lastRun: Awaited<ReturnType<typeof runEval>> | null = null;
+
     for (let i = 0; i < runs; i++) {
       lastRun = await runEval(evalCase, skillPath, evalDir, harness, options.oldSkill);
+
+      // Grade every run, not just the last
+      const [wsGrading, wosGrading] = await Promise.all([
+        gradeAssertions(
+          assertions,
+          lastRun.withSkill.output,
+          path.join(evalDir, 'with_skill'),
+          inference,
+          fs.existsSync(scriptsDir) ? scriptsDir : undefined,
+        ),
+        gradeAssertions(
+          assertions,
+          lastRun.withoutSkill.output,
+          path.join(evalDir, baselineVariant),
+          inference,
+          fs.existsSync(scriptsDir) ? scriptsDir : undefined,
+        ),
+      ]);
+      allGradings.push({ withSkill: wsGrading, withoutSkill: wosGrading });
     }
 
     if (!lastRun) {
       throw new SnapevalError(`No runs completed for eval ${evalCase.id}`);
     }
 
-    const assertions = evalCase.assertions ?? [];
-    const [withSkillGrading, withoutSkillGrading] = await Promise.all([
-      gradeAssertions(
-        assertions,
-        lastRun.withSkill.output,
-        path.join(evalDir, 'with_skill'),
-        inference,
-        fs.existsSync(scriptsDir) ? scriptsDir : undefined,
-      ),
-      gradeAssertions(
-        assertions,
-        lastRun.withoutSkill.output,
-        path.join(evalDir, baselineVariant),
-        inference,
-        fs.existsSync(scriptsDir) ? scriptsDir : undefined,
-      ),
-    ]);
+    // Use the last run's grading as the primary result (written to grading.json)
+    // but all gradings contribute to benchmark stats via pass rates
+    const lastGrading = allGradings[allGradings.length - 1];
 
     return {
       evalId: evalCase.id,
@@ -131,11 +146,11 @@ export async function evalCommand(
       prompt: evalCase.prompt,
       withSkill: {
         output: lastRun.withSkill.output,
-        grading: withSkillGrading ?? undefined,
+        grading: lastGrading.withSkill ?? undefined,
       },
       withoutSkill: {
         output: lastRun.withoutSkill.output,
-        grading: withoutSkillGrading ?? undefined,
+        grading: lastGrading.withoutSkill ?? undefined,
       },
     };
   });

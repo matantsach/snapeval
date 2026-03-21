@@ -1,5 +1,22 @@
+import * as fs from 'node:fs';
+import * as path from 'node:path';
 import chalk from 'chalk';
-import type { ReportAdapter, EvalResults } from '../../types.js';
+import type { ReportAdapter, EvalResults, BenchmarkData } from '../../types.js';
+
+function loadPreviousBenchmark(iterationDir: string): BenchmarkData | null {
+  const workspaceDir = path.dirname(iterationDir);
+  const currentName = path.basename(iterationDir);
+  const currentNum = parseInt(currentName.replace('iteration-', ''), 10);
+  if (isNaN(currentNum) || currentNum <= 1) return null;
+  const prevDir = path.join(workspaceDir, `iteration-${currentNum - 1}`);
+  const prevBenchmark = path.join(prevDir, 'benchmark.json');
+  if (!fs.existsSync(prevBenchmark)) return null;
+  try {
+    return JSON.parse(fs.readFileSync(prevBenchmark, 'utf-8'));
+  } catch {
+    return null;
+  }
+}
 
 export class TerminalReporter implements ReportAdapter {
   readonly name = 'terminal';
@@ -46,5 +63,15 @@ export class TerminalReporter implements ReportAdapter {
     console.log(`  Skill pass rate:    ${(ws.pass_rate.mean * 100).toFixed(1)}%`);
     console.log(`  Baseline pass rate: ${(wos.pass_rate.mean * 100).toFixed(1)}%`);
     console.log(`  Improvement:        ${deltaColor(`${delta.pass_rate > 0 ? '+' : ''}${(delta.pass_rate * 100).toFixed(1)}%`)}`);
+
+    // Show comparison with previous iteration if available
+    const prev = loadPreviousBenchmark(results.iterationDir);
+    if (prev) {
+      const prevRate = prev.run_summary.with_skill.pass_rate.mean;
+      const currRate = ws.pass_rate.mean;
+      const change = currRate - prevRate;
+      const changeColor = change > 0 ? chalk.green : change < 0 ? chalk.red : chalk.dim;
+      console.log(`  vs previous:        ${changeColor(`${change > 0 ? '+' : ''}${(change * 100).toFixed(1)}%`)} (was ${(prevRate * 100).toFixed(1)}%)`);
+    }
   }
 }

@@ -8,6 +8,23 @@ import type {
   AssertionResult,
 } from '../types.js';
 
+const EXACT_MATCH_PATTERN = /^Output (?:is |equals )exactly:\s*"(.+)"$/i;
+
+function gradeExactMatch(assertion: string, output: string): AssertionResult | null {
+  const match = assertion.match(EXACT_MATCH_PATTERN);
+  if (!match) return null;
+  const expected = match[1];
+  const actual = output.trim();
+  const passed = actual === expected;
+  return {
+    text: assertion,
+    passed,
+    evidence: passed
+      ? `Exact match: "${expected}"`
+      : `Expected: "${expected}"\nGot: "${actual}"`,
+  };
+}
+
 function buildGradingPrompt(assertions: string[], output: string, files: string[]): string {
   const fileList = files.length > 0 ? `\nFiles produced: ${files.join(', ')}` : '';
   return `You are a strict eval grader. For each assertion, determine PASS or FAIL based on the output below. Require concrete evidence for a PASS — do not give the benefit of the doubt.
@@ -41,15 +58,34 @@ function runScript(
     const evidence = execFileSync(scriptPath, [outputDir], { encoding: 'utf-8', timeout: 30000 }).trim();
     return { text: `script:${scriptName}`, passed: true, evidence };
   } catch (err: any) {
-    const evidence = err.stdout?.trim() || err.message || 'Script exited with non-zero code';
+    // Extract the most useful error info without raw stack traces
+    const stderr = err.stderr?.trim();
+    const stdout = err.stdout?.trim();
+    let evidence: string;
+    if (err.code === 'EACCES') {
+      evidence = `Permission denied: ${scriptPath} is not executable. Run: chmod +x ${scriptPath}`;
+    } else if (stderr) {
+      // Take only the first line of stderr to avoid stack trace noise
+      evidence = stderr.split('\n')[0];
+    } else if (stdout) {
+      evidence = stdout.split('\n')[0];
+    } else {
+      evidence = `Script exited with code ${err.status ?? 'unknown'}`;
+    }
     return { text: `script:${scriptName}`, passed: false, evidence };
   }
 }
 
 function extractJSON(text: string): string {
-  const match = text.match(/```(?:json)?\s*([\s\S]*?)```/);
-  if (match) return match[1].trim();
-  return text.trim();
+  // Try JSON-tagged fence first, then bare fence, then raw text
+  const jsonFence = text.match(/```json\s*([\s\S]*?)```/);
+  if (jsonFence) return jsonFence[1].trim();
+  // Try parsing raw text as JSON before falling back to any fence
+  const trimmed = text.trim();
+  try { JSON.parse(trimmed); return trimmed; } catch { /* not raw JSON */ }
+  const anyFence = text.match(/```\s*([\s\S]*?)```/);
+  if (anyFence) return anyFence[1].trim();
+  return trimmed;
 }
 
 export async function gradeAssertions(
@@ -62,7 +98,8 @@ export async function gradeAssertions(
   if (assertions.length === 0) return null;
 
   const scriptAssertions = assertions.filter(a => a.startsWith('script:'));
-  const llmAssertions = assertions.filter(a => !a.startsWith('script:'));
+  const exactAssertions = assertions.filter(a => !a.startsWith('script:') && EXACT_MATCH_PATTERN.test(a));
+  const llmAssertions = assertions.filter(a => !a.startsWith('script:') && !EXACT_MATCH_PATTERN.test(a));
   const results: AssertionResult[] = [];
 
   for (const assertion of scriptAssertions) {
@@ -70,6 +107,11 @@ export async function gradeAssertions(
     const outputDir = path.join(runDir, 'outputs');
     const dir = scriptsDir ?? path.join(runDir, '..', '..', '..', 'evals', 'scripts');
     results.push(runScript(scriptName, outputDir, dir));
+  }
+
+  for (const assertion of exactAssertions) {
+    const result = gradeExactMatch(assertion, output.raw);
+    if (result) results.push(result);
   }
 
   if (llmAssertions.length > 0) {
