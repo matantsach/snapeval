@@ -5,7 +5,7 @@ export interface E2ERunResult {
 }
 
 export interface E2ERunOptions {
-  command: 'init' | 'eval' | 'review';
+  command: 'eval' | 'review';
   skillDir: string;
   flags?: Record<string, string>;
 }

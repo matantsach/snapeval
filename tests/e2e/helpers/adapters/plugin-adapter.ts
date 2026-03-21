@@ -10,8 +10,6 @@ function buildPrompt(command: string, skillDir: string, flags?: Record<string, s
   const extra = workspace + oldSkill;
 
   switch (command) {
-    case 'init':
-      return `Generate eval test cases for the skill at ${skillDir}. Run without asking for confirmation.${extra}`;
     case 'eval':
       return `Run evals for the skill at ${skillDir}. Run all evals without asking for confirmation.${extra}`;
     case 'review':

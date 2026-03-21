@@ -4,14 +4,10 @@ import {
   copyGreeterSkill,
   writeMinimalEvals,
   createOldSkillVersion,
-  createEmptyDir,
   cleanupAll,
   getWorkspaceDir,
 } from './helpers/fixtures.js';
 import {
-  assertEvalsJson,
-  assertEvalsRelevance,
-  assertEvalsNoAssertions,
   assertIterationDir,
   assertDualRunDirs,
   assertOldSkillDir,
@@ -21,37 +17,22 @@ import {
   assertNoGrading,
   assertBenchmark,
   assertFeedback,
-  assertCleanState,
   listEvalDirs,
 } from './helpers/assertions.js';
-import { generateEvals } from './helpers/stories/generate-evals.js';
 import { evalWithAssertions } from './helpers/stories/eval-with-assertions.js';
 import { evalWithoutAssertions } from './helpers/stories/eval-without-assertions.js';
 import { evalOldSkill } from './helpers/stories/eval-old-skill.js';
 import { reviewFlow } from './helpers/stories/review-flow.js';
 import { multiIteration } from './helpers/stories/multi-iteration.js';
-import { noSkillMd, noEvalsJson } from './helpers/stories/error-paths.js';
+import { noEvalsJson } from './helpers/stories/error-paths.js';
 
 const adapter = new CLIAdapter();
 const copilotAvailable = await adapter.isAvailable();
-
-const GREETER_KEYWORDS = ['greet', 'greeting', 'formal', 'casual', 'pirate', 'greeter', 'hello'];
 
 describe.skipIf(!copilotAvailable)('CLI E2E', () => {
   beforeAll(() => adapter.setup());
   afterAll(() => adapter.teardown());
   afterEach(() => cleanupAll());
-
-  it('US1: init generates evals.json from SKILL.md', async () => {
-    const skillDir = copyGreeterSkill({ skillMdOnly: true });
-    const { initResult } = await generateEvals(adapter, skillDir);
-
-    expect(initResult.exitCode).toBe(0);
-
-    assertEvalsJson(skillDir);
-    assertEvalsRelevance(skillDir, GREETER_KEYWORDS);
-    assertEvalsNoAssertions(skillDir);
-  });
 
   it('US2: eval with assertions produces all spec artifacts', async () => {
     const skillDir = copyGreeterSkill({ skillMdOnly: true });
@@ -148,20 +129,11 @@ describe.skipIf(!copilotAvailable)('CLI E2E', () => {
     assertBenchmark(`${workspace}/iteration-3`);
   });
 
-  it('US-ERR1: no SKILL.md produces error', async () => {
-    const emptyDir = createEmptyDir();
-    const { result } = await noSkillMd(adapter, emptyDir);
-
-    expect(result.exitCode).toBe(2);
-    expect(result.stderr).toMatch(/SKILL\.md|not found/i);
-    assertCleanState(emptyDir);
-  });
-
   it('US-ERR2: no evals.json produces error', async () => {
     const skillDir = copyGreeterSkill({ skillMdOnly: true });
     const { result } = await noEvalsJson(adapter, skillDir);
 
     expect(result.exitCode).toBe(2);
-    expect(result.stderr).toMatch(/evals\.json|init/i);
+    expect(result.stderr).toMatch(/evals\.json/i);
   });
 });

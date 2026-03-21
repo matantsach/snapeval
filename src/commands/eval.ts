@@ -21,7 +21,7 @@ export async function evalCommand(
 ): Promise<EvalResults> {
   const evalsPath = path.join(skillPath, 'evals', 'evals.json');
   if (!fs.existsSync(evalsPath)) {
-    throw new SnapevalError(`No evals.json found at ${evalsPath}. Run \`snapeval init\` first.`);
+    throw new SnapevalError(`No evals.json found at ${evalsPath}. Create evals/evals.json with test scenarios first.`);
   }
 
   const evalsFile: EvalsFile = JSON.parse(fs.readFileSync(evalsPath, 'utf-8'));

@@ -19,14 +19,14 @@ npx tsx bin/snapeval.ts <command> <skill-path>  # Run any CLI command locally
 
 ### Core Flow
 
-`init` (AI generates evals.json from SKILL.md) → `eval` (run with/without skill, grade assertions, compute benchmark) → `review` (eval + HTML report + feedback template)
+`eval` (run with/without skill, grade assertions, compute benchmark) → `review` (eval + HTML report + feedback template)
 
 ### Two Adapter Layers
 
 Each layer is an interface in `src/types.ts` with implementations in `src/adapters/`:
 
 - **Harness** (`src/adapters/harness/`) — How to invoke a skill. Implements `run()` with and without SKILL.md. Built-in: `CopilotCLIHarness`. Session isolation required per run.
-- **InferenceAdapter** (`src/adapters/inference/`) — LLM for grading assertions and generating evals. `CopilotInference`, `CopilotSDKInference`, and `GitHubModelsInference` with auto-resolution in `resolve.ts`.
+- **InferenceAdapter** (`src/adapters/inference/`) — LLM for grading assertions. `CopilotInference`, `CopilotSDKInference`, and `GitHubModelsInference` with auto-resolution in `resolve.ts`.
 
 ### Engine Modules (`src/engine/`)
 
@@ -34,7 +34,6 @@ Each layer is an interface in `src/types.ts` with implementations in `src/adapte
 - `runner.ts` — `runEval()`: orchestrates dual harness runs (with/without skill), writes `timing.json` and `output.txt` per run
 - `grader.ts` — `gradeAssertions()`: LLM-based grading for semantic assertions, script-based for `script:` prefixed assertions. Writes `grading.json`
 - `aggregator.ts` — `computeBenchmark()`: computes `benchmark.json` with mean/stddev/delta across with_skill vs without_skill
-- `generator.ts` — Builds prompts for AI test case generation (prompts + expected outputs, no assertions), parses JSON responses
 
 ### Other Key Modules
 
@@ -43,7 +42,7 @@ Each layer is an interface in `src/types.ts` with implementations in `src/adapte
 
 ### CLI Entry Point
 
-`bin/snapeval.ts` uses `commander` to wire three commands (`init`, `eval`, `review`), each in `src/commands/`. Commands resolve config, instantiate adapters, and delegate to engine modules.
+`bin/snapeval.ts` uses `commander` to wire two commands (`eval`, `review`), each in `src/commands/`. Commands resolve config, instantiate adapters, and delegate to engine modules.
 
 ### Artifact Formats (agentskills.io spec)
 
@@ -56,7 +55,7 @@ Each layer is an interface in `src/types.ts` with implementations in `src/adapte
 
 - Vitest with globals enabled. Tests mirror source structure under `tests/`.
 - Adapters and inference are mocked via `vi.mock()` / `vi.mocked()`.
-- Integration tests (`tests/integration.test.ts`) exercise the full init → eval workflow with mocked adapters.
+- Integration tests (`tests/integration.test.ts`) exercise the eval workflow with mocked adapters.
 - Tests use `fs.mkdtempSync` for temp directories, cleaned up in `afterEach`.
 
 ## TypeScript
