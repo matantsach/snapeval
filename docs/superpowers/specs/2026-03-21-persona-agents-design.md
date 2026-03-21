@@ -52,8 +52,10 @@ Example evals.json entry:
 - 6 eval cases: clean code, obvious bug, style-only issues, empty PR, binary files, mixed languages
 - Mix of LLM assertions and `script:` assertions (validate JSON structure, check severity enum values)
 - SKILL-v2.md adds: severity levels (critical/warning/info) to output format
+- `validate-json-structure.sh` — verifies output is valid JSON with required fields
+- `check-severity-values.sh` — verifies severity values are one of (critical, warning, info). Used by SKILL-v2.md evals after severity levels are added.
 
-Example evals.json entry with script assertion:
+Example evals.json entries with script assertions:
 ```json
 {
   "id": 1,
@@ -66,6 +68,15 @@ Example evals.json entry with script assertion:
     "script:validate-json-structure.sh"
   ]
 }
+```
+
+After SKILL-v2.md is applied (Stage 2), evals should also use:
+```json
+"assertions": [
+  "...",
+  "script:validate-json-structure.sh",
+  "script:check-severity-values.sh"
+]
 ```
 
 #### `api-doc-generator` (Medium)
@@ -116,10 +127,11 @@ All evals.json files must conform to the `EvalsFile` schema from `src/types.ts`:
 
 **Field notes:**
 - `expected_output` (required): Human-readable description of what correct output looks like. Not used by the grader — assertions are the actual test. This field exists for human readability when reviewing evals.json and appears in the review report. Write it as a brief description, not a literal expected string. See `test-skills/greeter/evals/evals.json` for examples.
+- `files` (optional): Array of file paths relative to the skill directory. The harness passes these alongside the prompt to the underlying tool. Use for skills that need file input (e.g., `code-reviewer` receiving PR files). Omit or use `[]` for prompt-only skills.
 
 **Assertion conventions:**
 - **LLM assertions:** Plain English strings. Must be concrete and verifiable — "Output contains a YAML block with an 'id' field" not "Output is correct."
-- **Script assertions:** Prefixed with `script:`. The filename is relative to `<skill-dir>/evals/scripts/`. The script receives the output directory as its first argument and passes on exit code 0. Scripts must be executable (`chmod +x`). If not executable, the grader reports `passed: false` with a misleading "non-zero exit code" message — there is no setup-time diagnostic.
+- **Script assertions:** Prefixed with `script:`. The filename is relative to `<skill-dir>/evals/scripts/`. The script receives the `outputs/` subdirectory as its first argument (e.g., `iteration-1/eval-1/with_skill/outputs/`). The actual output is at `$1/output.txt`. Scripts pass on exit code 0. Scripts must be executable (`chmod +x`). If not executable, the grader reports `passed: false` with a misleading "non-zero exit code" message — there is no setup-time diagnostic.
 
 ### Part B: Persona Agents
 
@@ -188,8 +200,15 @@ All commands run from the repo root using `npx tsx bin/snapeval.ts` (dev invocat
 - Report on: Was extending evals smooth? Did the new case integrate cleanly? Any issues?
 
 **Persona-specific bonus stages:**
-- Jordan (Stage 4): Dig into benchmark.json numbers, question stddev, run with `--runs 3`. Note: current `--runs` implementation only retains the last run's grading per eval case — stddev in benchmark.json comes from variance across eval cases, not repeated measurements. This is a known gap that Jordan should surface as `category: "missing_feature"`, `severity: "slows_down"`.
-- Sam (Stage 4): Parse artifacts programmatically, test exit codes on failure, validate headless operation. Output artifacts land in a workspace directory (default: `<skill-name>-workspace/` relative to CWD). The workspace contains `iteration-N/eval-{slug}/{with_skill,without_skill}/` subdirectories. The `eval` command prints the iteration directory path to stdout. Sam should discover and parse artifacts from this path.
+- Jordan (Stage 4): Dig into benchmark.json numbers, question stddev, run with `--runs 3`. Jordan should independently evaluate whether `--runs` produces the statistical behavior they expect and file feedback on what they observe.
+- Sam (Stage 4): Parse artifacts programmatically, test exit codes on failure, validate headless operation. Output artifacts land in a workspace directory (default: `<skill-name>-workspace/` as a sibling of the skill directory, e.g., `personas/skills/api-doc-generator-workspace/`). The workspace contains `iteration-N/eval-{slug}/{with_skill,without_skill}/` subdirectories. The `eval` command prints the iteration directory path to stdout. Sam should discover and parse artifacts from this path.
+
+### Known Gaps (for agent prompt authors)
+
+These are real snapeval behaviors that personas may surface. Do not pre-seed these conclusions in AGENT_PROMPT.md — let personas discover them independently and file feedback.
+
+- `--runs N` only retains the last run's grading per eval case. Stddev in benchmark.json comes from variance across eval cases, not repeated measurements. Expected feedback: `category: "missing_feature"`, `severity: "slows_down"`.
+- Script assertion failures due to missing `chmod +x` produce misleading "non-zero exit code" errors with no setup-time diagnostic. Expected feedback: `category: "ux"`, `severity: "blocks_workflow"`.
 
 ### Feedback Format
 
