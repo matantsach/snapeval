@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.1.1](https://github.com/matantsach/snapeval/compare/snapeval-v2.1.0...snapeval-v2.1.1) (2026-03-21)
+
+
+### Bug Fixes
+
+* persona feedback — runs averaging, threshold validation, eval labels ([#42](https://github.com/matantsach/snapeval/issues/42)) ([896c0ae](https://github.com/matantsach/snapeval/commit/896c0ae2b25c154f6468c32cb116ed78660722b6))
+
 ## [2.1.0](https://github.com/matantsach/snapeval/compare/snapeval-v2.0.0...snapeval-v2.1.0) (2026-03-21)
 
 
