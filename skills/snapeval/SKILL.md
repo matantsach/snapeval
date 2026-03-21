@@ -58,13 +58,21 @@ Triggered by: "evaluate", "test", "set up evals", "evaluate my skill"
          "id": 1,
          "slug": "kebab-case-slug",
          "prompt": "The realistic user prompt",
-         "expected_output": "Human-readable description of expected behavior",
          "assertions": ["Assertion 1", "Assertion 2"],
          "files": []
        }
      ]
    }
    ```
+
+   **Writing good assertions:** Assertions are graded by an LLM that requires concrete evidence from the output to pass. Write specific, verifiable assertions — not vague ones.
+   - Good: `"Output contains a YAML block with an 'id' field for each issue"`
+   - Bad: `"Output is correct"`
+   - Good: `"Response declines to scout because the pipeline already has unclaimed issues"`
+   - Bad: `"Handles edge case properly"`
+
+   Script assertions are also supported: prefix with `script:` (e.g. `"script:check-yaml.sh"`). Scripts live in `<skill-path>/evals/scripts/`, receive the output directory as their first argument, and pass on exit code 0.
+
 2. Run: `npx snapeval eval <skill-path>` — runs each eval with and without the skill, grades assertions, produces grading.json + benchmark.json
 3. Interpret the benchmark:
    > "With skill: X% pass rate. Without skill: Y% pass rate. Delta: +Z%. The skill adds value on [specific assertions]."
@@ -99,7 +107,6 @@ Never show raw stack traces. Translate errors into plain language with a suggest
 
 | Error | Response |
 |-------|----------|
-| No SKILL.md found | "I can't find a SKILL.md in `<path>`. Is this the right directory?" |
 | No evals.json | "No test cases exist yet. Want me to design scenarios and create evals.json?" |
 | Inference unavailable | "I can't connect to the inference service. Check that Copilot CLI is authenticated (`copilot auth status`)." |
 | Skill invocation failure | "The skill failed to respond to eval N: `<error>`. This might be a bug in the skill — want to skip this eval and continue?" |
