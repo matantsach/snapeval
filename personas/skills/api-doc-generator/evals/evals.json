@@ -1,0 +1,66 @@
+{
+  "skill_name": "api-doc-generator",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Generate API docs for this OpenAPI spec:\n{\"openapi\":\"3.0.0\",\"info\":{\"title\":\"Users API\"},\"paths\":{\"/users\":{\"get\":{\"summary\":\"List all users\"},\"post\":{\"summary\":\"Create a user\"}}}}",
+      "expected_output": "Markdown docs with H1 title 'Users API', H2 for /users, H3 for GET and POST methods",
+      "files": [],
+      "assertions": [
+        "Output contains an H1 heading with 'Users API'",
+        "Output contains an H2 or section heading for /users",
+        "Output mentions 'List all users' and 'Create a user'",
+        "Output lists both GET and POST methods",
+        "script:validate-markdown-headers.sh"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "Generate API docs for this OpenAPI spec:\n{\"openapi\":\"3.0.0\",\"info\":{\"title\":\"Orders API\"},\"paths\":{\"/orders\":{\"get\":{\"summary\":\"List orders\"}},\"/orders/{id}\":{\"get\":{\"summary\":\"Get order by ID\"},\"put\":{\"summary\":\"Update order\"}},\"/orders/{id}/items\":{\"get\":{\"summary\":\"List order items\"}}}}",
+      "expected_output": "Markdown docs covering all three path levels including the nested /orders/{id}/items",
+      "files": [],
+      "assertions": [
+        "Output contains sections for /orders, /orders/{id}, and /orders/{id}/items",
+        "Output mentions all four methods: List orders, Get order by ID, Update order, List order items",
+        "script:validate-markdown-headers.sh",
+        "script:check-endpoint-coverage.sh"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "Generate API docs for this OpenAPI spec:\n{\"openapi\":\"3.0.0\",\"info\":{\"title\":\"Auth API\"},\"paths\":{\"/auth/login\":{\"post\":{\"summary\":\"Login with credentials\"}},\"/auth/logout\":{\"post\":{\"summary\":\"Logout current session\"}},\"/auth/refresh\":{\"post\":{\"summary\":\"Refresh access token\"}}}}",
+      "expected_output": "Markdown docs for three auth endpoints, all POST methods",
+      "files": [],
+      "assertions": [
+        "Output contains sections for /auth/login, /auth/logout, and /auth/refresh",
+        "Output identifies all three as POST methods",
+        "script:validate-markdown-headers.sh",
+        "script:check-endpoint-coverage.sh"
+      ]
+    },
+    {
+      "id": 4,
+      "prompt": "Generate API docs for this OpenAPI spec:\n{\"openapi\":\"3.0.0\",\"info\":{\"title\":\"Empty API\"},\"paths\":{}}",
+      "expected_output": "Handles empty paths with 'No endpoints defined' message",
+      "files": [],
+      "assertions": [
+        "Output contains 'No endpoints defined' or equivalent message",
+        "Output contains an H1 heading",
+        "script:validate-markdown-headers.sh"
+      ]
+    },
+    {
+      "id": 5,
+      "prompt": "Generate API docs for this OpenAPI spec:\n{\"openapi\":\"3.0.0\",\"info\":{\"title\":\"Events API\"},\"paths\":{\"/webhooks\":{\"post\":{\"summary\":\"Register webhook\"},\"delete\":{\"summary\":\"Remove webhook\"}},\"/webhooks/{id}/events\":{\"get\":{\"summary\":\"List webhook events\"}}}}",
+      "expected_output": "Markdown docs for webhook endpoints including nested events path",
+      "files": [],
+      "assertions": [
+        "Output contains sections for /webhooks and /webhooks/{id}/events",
+        "Output mentions Register webhook, Remove webhook, and List webhook events",
+        "Output lists POST, DELETE, and GET methods",
+        "script:validate-markdown-headers.sh",
+        "script:check-endpoint-coverage.sh"
+      ]
+    }
+  ]
+}
