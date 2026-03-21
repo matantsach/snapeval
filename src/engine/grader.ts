@@ -63,7 +63,7 @@ function runScript(
     return { text: `script:${scriptName}`, passed: false, evidence: `Script not found: ${scriptPath}` };
   }
   try {
-    const stdout = execFileSync(scriptPath, [outputDir], { encoding: 'utf-8', timeout: 30000 }).trim();
+    const stdout = execFileSync(scriptPath, [outputDir], { encoding: 'utf-8', timeout: 30000, stdio: ['pipe', 'pipe', 'pipe'] }).trim();
     const evidence = stdout || `Script passed: ${scriptName}`;
     return { text: `script:${scriptName}`, passed: true, evidence };
   } catch (err: any) {
