@@ -58,8 +58,9 @@ run_persona() {
 PIDS=()
 for persona in "${PERSONAS[@]}"; do
   run_persona "$persona" &
-  PIDS+=($!)
-  echo "Launched $persona (PID ${PIDS[-1]})"
+  PID=$!
+  PIDS+=($PID)
+  echo "Launched $persona (PID $PID)"
 done
 
 echo ""
