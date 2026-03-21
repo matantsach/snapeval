@@ -27,7 +27,15 @@ function gradeExactMatch(assertion: string, output: string): AssertionResult | n
 
 function buildGradingPrompt(assertions: string[], output: string, files: string[]): string {
   const fileList = files.length > 0 ? `\nFiles produced: ${files.join(', ')}` : '';
-  return `You are a strict eval grader. For each assertion, determine PASS or FAIL based on the output below. Require concrete evidence for a PASS — do not give the benefit of the doubt.
+  return `You are an eval grader. For each assertion, determine PASS or FAIL based solely on the output below.
+
+GRADING RULES:
+- PASS if the output satisfies the assertion's intent, even if wording differs slightly.
+- FAIL only if the output clearly does not satisfy the assertion.
+- Be consistent: if an assertion checks for X and the output contains X in different phrasing, that is a PASS.
+- For "contains" assertions: look for semantic presence, not exact substring.
+- For "identifies" assertions: the output must demonstrate awareness of the concept, not use identical words.
+- Always cite specific text from the output as evidence.
 
 OUTPUT:
 ---
@@ -40,7 +48,7 @@ ${assertions.map((a, i) => `${i + 1}. ${a}`).join('\n')}
 Respond with JSON only:
 {
   "results": [
-    {"text": "<assertion text>", "passed": true/false, "evidence": "<quote or reference from output>"}
+    {"text": "<assertion text>", "passed": true/false, "evidence": "<quote from output supporting your verdict>"}
   ]
 }`;
 }
