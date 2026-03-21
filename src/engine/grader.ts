@@ -85,16 +85,70 @@ function runScript(
   }
 }
 
+function stripAnsi(text: string): string {
+  // eslint-disable-next-line no-control-regex
+  return text.replace(/\x1b\[[0-9;]*m/g, '');
+}
+
 function extractJSON(text: string): string {
+  const clean = stripAnsi(text);
   // Try JSON-tagged fence first, then bare fence, then raw text
-  const jsonFence = text.match(/```json\s*([\s\S]*?)```/);
+  const jsonFence = clean.match(/```json\s*([\s\S]*?)```/);
   if (jsonFence) return jsonFence[1].trim();
   // Try parsing raw text as JSON before falling back to any fence
-  const trimmed = text.trim();
+  const trimmed = clean.trim();
   try { JSON.parse(trimmed); return trimmed; } catch { /* not raw JSON */ }
-  const anyFence = text.match(/```\s*([\s\S]*?)```/);
+  const anyFence = clean.match(/```\s*([\s\S]*?)```/);
   if (anyFence) return anyFence[1].trim();
+  // Last resort: find first { or [ and extract to its matching close
+  const start = trimmed.search(/[{[]/);
+  if (start >= 0) {
+    const sub = trimmed.slice(start);
+    try { JSON.parse(sub); return sub; } catch { /* not valid from here */ }
+  }
   return trimmed;
+}
+
+const MAX_GRADING_RETRIES = 2;
+
+async function gradeLLMAssertions(
+  prompt: string,
+  assertions: string[],
+  runDir: string,
+  inference: InferenceAdapter,
+): Promise<AssertionResult[]> {
+  for (let attempt = 0; attempt <= MAX_GRADING_RETRIES; attempt++) {
+    const response = await inference.chat(
+      [{ role: 'user', content: prompt }],
+      { temperature: 0, responseFormat: 'json' }
+    );
+    const jsonText = extractJSON(response);
+    try {
+      const parsed = JSON.parse(jsonText);
+      const items = Array.isArray(parsed) ? parsed : parsed.results;
+      if (!Array.isArray(items)) throw new Error('No results array in grader response');
+      return items.map((r: any) => ({
+        text: r.text ?? '',
+        passed: Boolean(r.passed),
+        evidence: r.evidence ?? '',
+      }));
+    } catch (err) {
+      // Write debug info on every failed attempt
+      const debugPath = path.join(runDir, `grader-debug-attempt-${attempt}.txt`);
+      fs.writeFileSync(debugPath, `--- raw response ---\n${response}\n--- extracted ---\n${jsonText}\n--- error ---\n${err}\n`);
+
+      if (attempt < MAX_GRADING_RETRIES) continue;
+
+      // All retries exhausted — fail gracefully instead of crashing the run
+      return assertions.map((text) => ({
+        text,
+        passed: false,
+        evidence: `Grading failed: LLM returned malformed JSON after ${MAX_GRADING_RETRIES + 1} attempts. See ${debugPath} for details.`,
+      }));
+    }
+  }
+  // Unreachable but TypeScript needs it
+  return [];
 }
 
 export async function gradeAssertions(
@@ -125,14 +179,8 @@ export async function gradeAssertions(
 
   if (llmAssertions.length > 0) {
     const prompt = buildGradingPrompt(llmAssertions, output.raw, output.files);
-    const response = await inference.chat(
-      [{ role: 'user', content: prompt }],
-      { temperature: 0, responseFormat: 'json' }
-    );
-    const parsed = JSON.parse(extractJSON(response));
-    for (const r of parsed.results) {
-      results.push({ text: r.text, passed: Boolean(r.passed), evidence: r.evidence });
-    }
+    const graded = await gradeLLMAssertions(prompt, llmAssertions, runDir, inference);
+    results.push(...graded);
   }
 
   const passed = results.filter(r => r.passed).length;
