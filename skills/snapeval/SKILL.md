@@ -12,8 +12,10 @@ Before acting, determine the current state by checking files in the skill direct
 | State | Condition | Mode |
 |-------|-----------|------|
 | **Fresh** | No `evals/evals.json` | First Evaluation |
-| **Has evals, no workspace** | `evals/evals.json` exists but no workspace directory | Run Eval |
-| **Has results** | Workspace with `iteration-N/` exists | Re-eval or Review |
+| **Has evals, no workspace** | `evals/evals.json` exists but no workspace directory | Run Eval or Review (skip all interactive phases — go straight to running the command) |
+| **Has results** | Workspace with `iteration-N/` exists | Re-eval or Review (skip all interactive phases) |
+
+**Important:** The interactive phases (Discover, Analyze, Interview, Propose) only apply to the **First Evaluation** flow when no evals.json exists. When evals.json already exists, skip straight to running the `eval` or `review` command. If the user says "run", "just do it", or "without asking", always skip interactive phases.
 
 ## First Evaluation
 
