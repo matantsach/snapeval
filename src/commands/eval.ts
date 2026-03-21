@@ -190,6 +190,7 @@ export async function evalCommand(
     return {
       evalId: evalCase.id,
       slug,
+      label: evalCase.label,
       prompt: evalCase.prompt,
       withSkill: {
         output: lastRun.withSkill.output,

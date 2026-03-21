@@ -43,6 +43,7 @@ export interface EvalCase {
   id: number;
   prompt: string;
   expected_output: string;
+  label?: string;
   slug?: string;
   files?: string[];
   assertions?: string[];
@@ -110,6 +111,7 @@ export interface FeedbackData {
 export interface EvalRunResult {
   evalId: number;
   slug: string;
+  label?: string;
   prompt: string;
   withSkill: {
     output: HarnessRunResult;
