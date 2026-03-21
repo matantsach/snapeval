@@ -4,11 +4,22 @@ import type { E2ETestAdapter, E2ERunResult, E2ERunOptions } from '../types.js';
 
 const PROJECT_ROOT = path.resolve(import.meta.dirname, '..', '..', '..', '..');
 
-const COMMAND_PROMPTS: Record<string, (skillDir: string) => string> = {
-  init: (dir) => `Generate eval test cases for the skill at ${dir}. Run without asking for confirmation.`,
-  eval: (dir) => `Run evals for the skill at ${dir}. Run all evals without asking for confirmation.`,
-  review: (dir) => `Run evals for the skill at ${dir} and generate a review with feedback template.`,
-};
+function buildPrompt(command: string, skillDir: string, flags?: Record<string, string>): string {
+  const workspace = flags?.workspace ? ` Use workspace directory ${flags.workspace}.` : '';
+  const oldSkill = flags?.['old-skill'] ? ` Compare against old skill at ${flags['old-skill']}.` : '';
+  const extra = workspace + oldSkill;
+
+  switch (command) {
+    case 'init':
+      return `Generate eval test cases for the skill at ${skillDir}. Run without asking for confirmation.${extra}`;
+    case 'eval':
+      return `Run evals for the skill at ${skillDir}. Run all evals without asking for confirmation.${extra}`;
+    case 'review':
+      return `Run evals for the skill at ${skillDir} and generate a review with feedback template.${extra}`;
+    default:
+      return '';
+  }
+}
 
 export class PluginAdapter implements E2ETestAdapter {
   readonly name = 'plugin';
@@ -48,12 +59,10 @@ export class PluginAdapter implements E2ETestAdapter {
   }
 
   async run(options: E2ERunOptions): Promise<E2ERunResult> {
-    const promptFn = COMMAND_PROMPTS[options.command];
-    if (!promptFn) {
+    const prompt = buildPrompt(options.command, options.skillDir, options.flags);
+    if (!prompt) {
       return { stdout: '', stderr: `Unknown command: ${options.command}`, exitCode: 1 };
     }
-
-    const prompt = promptFn(options.skillDir);
     const args = ['-p', prompt, '-s', '--no-ask-user', '--allow-all-tools', '--model', 'gpt-4.1'];
 
     return new Promise<E2ERunResult>((resolve) => {

@@ -6,6 +6,7 @@ import {
   createOldSkillVersion,
   createEmptyDir,
   cleanupAll,
+  getWorkspaceDir,
 } from './helpers/fixtures.js';
 import {
   assertEvalsJson,
@@ -21,7 +22,6 @@ import {
   assertBenchmark,
   assertFeedback,
   assertCleanState,
-  findWorkspaceDir,
   listEvalDirs,
 } from './helpers/assertions.js';
 import { generateEvals } from './helpers/stories/generate-evals.js';
@@ -37,8 +37,8 @@ const copilotAvailable = await adapter.isAvailable();
 
 const GREETER_KEYWORDS = ['greet', 'greeting', 'formal', 'casual', 'pirate', 'greeter', 'hello'];
 
-// Plugin tests are inherently non-deterministic — Copilot may not invoke the
-// snapeval tool as expected from NL prompts. Mark as concurrent to avoid blocking.
+// Plugin tests send NL prompts to Copilot with the snapeval plugin installed.
+// They test the actual user experience of talking to Copilot.
 describe.skipIf(!copilotAvailable)('Plugin E2E', () => {
   beforeAll(() => adapter.setup());
   afterAll(() => adapter.teardown());
@@ -56,9 +56,9 @@ describe.skipIf(!copilotAvailable)('Plugin E2E', () => {
   it('US2: eval with assertions produces all spec artifacts', async () => {
     const skillDir = copyGreeterSkill({ skillMdOnly: true });
     writeMinimalEvals(skillDir, { withAssertions: true });
-    await evalWithAssertions(adapter, skillDir);
+    const workspace = getWorkspaceDir(skillDir);
+    await evalWithAssertions(adapter, skillDir, workspace);
 
-    const workspace = findWorkspaceDir(skillDir);
     assertIterationDir(workspace, 1);
 
     const evalDirs = listEvalDirs(`${workspace}/iteration-1`);
@@ -81,9 +81,9 @@ describe.skipIf(!copilotAvailable)('Plugin E2E', () => {
     const skillDir = copyGreeterSkill({ skillMdOnly: true });
     writeMinimalEvals(skillDir, { withAssertions: false });
 
-    await evalWithoutAssertions(adapter, skillDir);
+    const workspace = getWorkspaceDir(skillDir);
+    await evalWithoutAssertions(adapter, skillDir, workspace);
 
-    const workspace = findWorkspaceDir(skillDir);
     const evalDirs = listEvalDirs(`${workspace}/iteration-1`);
 
     for (const evalDir of evalDirs) {
@@ -101,9 +101,9 @@ describe.skipIf(!copilotAvailable)('Plugin E2E', () => {
     writeMinimalEvals(skillDir);
     const oldSkillDir = createOldSkillVersion(skillDir);
 
-    await evalOldSkill(adapter, skillDir, oldSkillDir);
+    const workspace = getWorkspaceDir(skillDir);
+    await evalOldSkill(adapter, skillDir, oldSkillDir, workspace);
 
-    const workspace = findWorkspaceDir(skillDir);
     const evalDirs = listEvalDirs(`${workspace}/iteration-1`);
 
     for (const evalDir of evalDirs) {
@@ -114,9 +114,9 @@ describe.skipIf(!copilotAvailable)('Plugin E2E', () => {
   it('US5: review produces feedback.json', async () => {
     const skillDir = copyGreeterSkill({ skillMdOnly: true });
     writeMinimalEvals(skillDir, { withAssertions: true });
-    await reviewFlow(adapter, skillDir);
+    const workspace = getWorkspaceDir(skillDir);
+    await reviewFlow(adapter, skillDir, workspace);
 
-    const workspace = findWorkspaceDir(skillDir);
     assertIterationDir(workspace, 1);
     assertBenchmark(`${workspace}/iteration-1`);
     assertFeedback(`${workspace}/iteration-1`);
@@ -126,9 +126,9 @@ describe.skipIf(!copilotAvailable)('Plugin E2E', () => {
     const skillDir = copyGreeterSkill({ skillMdOnly: true });
     writeMinimalEvals(skillDir);
 
-    await multiIteration(adapter, skillDir, undefined, 3);
+    const workspace = getWorkspaceDir(skillDir);
+    await multiIteration(adapter, skillDir, workspace, 3);
 
-    const workspace = findWorkspaceDir(skillDir);
     assertIterationDir(workspace, 1);
     assertIterationDir(workspace, 2);
     assertIterationDir(workspace, 3);
