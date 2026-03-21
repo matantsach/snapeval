@@ -25,6 +25,7 @@ program
   .option('--workspace <path>', 'Workspace directory')
   .option('--runs <n>', 'Runs per eval for statistical significance', '1')
   .option('--concurrency <n>', 'Number of eval cases to run in parallel (1-10)', '1')
+  .option('--only <ids>', 'Run only specific eval IDs (comma-separated, e.g. --only 1,3,5)')
   .option('--old-skill <path>', 'Compare against old skill version instead of no-skill')
   .option('--verbose', 'Verbose output')
   .argument('[skill-dir]', 'Path to skill directory', process.cwd())
@@ -44,10 +45,15 @@ program
       const harness = resolveHarness(config.harness);
       const inference = resolveInference(config.inference);
 
+      const only = opts.only
+        ? (opts.only as string).split(',').map((s) => parseInt(s.trim(), 10))
+        : undefined;
+
       const results = await evalCommand(skillPath, harness, inference, {
         workspace: config.workspace,
         runs: config.runs,
         concurrency: config.concurrency,
+        only,
         oldSkill: opts.oldSkill as string | undefined,
       });
 

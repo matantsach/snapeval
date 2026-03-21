@@ -8,24 +8,43 @@ export class TerminalReporter implements ReportAdapter {
     const { skillName, evalRuns, benchmark } = results;
 
     console.log(chalk.bold(`\nsnapeval — ${skillName}`));
-    console.log(chalk.dim('─'.repeat(50)));
+    console.log(chalk.dim('─'.repeat(60)));
 
     for (const run of evalRuns) {
-      const wsRate = run.withSkill.grading?.summary.pass_rate;
-      const wosRate = run.withoutSkill.grading?.summary.pass_rate;
+      const wsGrading = run.withSkill.grading;
+      const wosGrading = run.withoutSkill.grading;
+      const wsRate = wsGrading?.summary.pass_rate;
+      const wosRate = wosGrading?.summary.pass_rate;
       const wsLabel = wsRate !== undefined ? `${(wsRate * 100).toFixed(0)}%` : 'n/a';
       const wosLabel = wosRate !== undefined ? `${(wosRate * 100).toFixed(0)}%` : 'n/a';
-      const tokens = run.withSkill.output.total_tokens;
-      const durationS = (run.withSkill.output.duration_ms / 1000).toFixed(2);
-      console.log(`  ${chalk.cyan(`#${run.evalId}`)} ${run.prompt.slice(0, 60)}`);
-      console.log(`    with_skill: ${wsLabel} | without_skill: ${wosLabel} | ${tokens} tokens, ${durationS}s`);
+      const wsColor = wsRate === 1 ? chalk.green : wsRate === 0 ? chalk.red : chalk.yellow;
+      const durationS = (run.withSkill.output.duration_ms / 1000).toFixed(1);
+
+      console.log(`  ${chalk.cyan(`#${run.evalId}`)} ${run.prompt.slice(0, 80)}`);
+      console.log(`    Skill: ${wsColor(wsLabel)} | Baseline: ${wosLabel} | ${durationS}s`);
+
+      // Show failed assertions inline
+      if (wsGrading) {
+        const failed = wsGrading.assertion_results.filter((a) => !a.passed);
+        for (const f of failed) {
+          console.log(chalk.red(`    FAIL: ${f.text}`));
+          if (f.evidence) {
+            console.log(chalk.dim(`          ${f.evidence.slice(0, 100)}`));
+          }
+        }
+      }
     }
 
-    console.log(chalk.dim('─'.repeat(50)));
+    console.log(chalk.dim('─'.repeat(60)));
 
+    const ws = benchmark.run_summary.with_skill;
+    const wos = benchmark.run_summary.without_skill;
     const delta = benchmark.run_summary.delta;
     const deltaColor = delta.pass_rate > 0 ? chalk.green : delta.pass_rate < 0 ? chalk.red : chalk.dim;
-    console.log(`Delta: ${deltaColor(`${(delta.pass_rate * 100).toFixed(1)}% pass rate`)} | ${delta.time_seconds.toFixed(1)}s time | ${delta.tokens.toFixed(0)} tokens`);
-    console.log(chalk.dim(`with_skill avg: ${(benchmark.run_summary.with_skill.pass_rate.mean * 100).toFixed(1)}% | without_skill avg: ${(benchmark.run_summary.without_skill.pass_rate.mean * 100).toFixed(1)}%`));
+
+    console.log(chalk.bold('Summary:'));
+    console.log(`  Skill pass rate:    ${(ws.pass_rate.mean * 100).toFixed(1)}%`);
+    console.log(`  Baseline pass rate: ${(wos.pass_rate.mean * 100).toFixed(1)}%`);
+    console.log(`  Improvement:        ${deltaColor(`${delta.pass_rate > 0 ? '+' : ''}${(delta.pass_rate * 100).toFixed(1)}%`)}`);
   }
 }

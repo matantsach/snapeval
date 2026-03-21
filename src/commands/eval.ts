@@ -31,18 +31,59 @@ async function runWithConcurrency<T>(
 
 const MAX_CONCURRENCY = 10;
 
+function validateEvalsFile(evalsFile: EvalsFile, evalsPath: string): void {
+  if (!evalsFile.skill_name || typeof evalsFile.skill_name !== 'string') {
+    throw new SnapevalError(`Invalid evals.json at ${evalsPath}: missing or invalid "skill_name" field.`);
+  }
+  if (!Array.isArray(evalsFile.evals)) {
+    throw new SnapevalError(`Invalid evals.json at ${evalsPath}: "evals" must be an array.`);
+  }
+  for (const [i, evalCase] of evalsFile.evals.entries()) {
+    const prefix = `Invalid evals.json at ${evalsPath}: evals[${i}]`;
+    if (typeof evalCase.id !== 'number') {
+      throw new SnapevalError(`${prefix} missing or invalid "id" (must be a number).`);
+    }
+    if (typeof evalCase.prompt !== 'string') {
+      throw new SnapevalError(`${prefix} (id:${evalCase.id}) missing "prompt" field.`);
+    }
+    if (typeof evalCase.expected_output !== 'string') {
+      throw new SnapevalError(`${prefix} (id:${evalCase.id}) missing "expected_output" field.`);
+    }
+    if (evalCase.assertions !== undefined && !Array.isArray(evalCase.assertions)) {
+      throw new SnapevalError(`${prefix} (id:${evalCase.id}) "assertions" must be an array of strings.`);
+    }
+  }
+}
+
 export async function evalCommand(
   skillPath: string,
   harness: Harness,
   inference: InferenceAdapter,
-  options: { workspace?: string; runs?: number; oldSkill?: string; concurrency?: number }
+  options: { workspace?: string; runs?: number; oldSkill?: string; concurrency?: number; only?: number[] }
 ): Promise<EvalResults> {
   const evalsPath = path.join(skillPath, 'evals', 'evals.json');
   if (!fs.existsSync(evalsPath)) {
     throw new SnapevalError(`No evals.json found at ${evalsPath}. Create evals/evals.json with test scenarios first.`);
   }
 
-  const evalsFile: EvalsFile = JSON.parse(fs.readFileSync(evalsPath, 'utf-8'));
+  let evalsFile: EvalsFile;
+  try {
+    evalsFile = JSON.parse(fs.readFileSync(evalsPath, 'utf-8'));
+  } catch {
+    throw new SnapevalError(`Invalid JSON in ${evalsPath}. Check for syntax errors (missing commas, trailing commas, etc).`);
+  }
+  validateEvalsFile(evalsFile, evalsPath);
+
+  // Filter to specific eval IDs if --only is provided
+  if (options.only && options.only.length > 0) {
+    const ids = new Set(options.only);
+    const filtered = evalsFile.evals.filter((e) => ids.has(e.id));
+    if (filtered.length === 0) {
+      throw new SnapevalError(`No eval cases match --only ${options.only.join(',')}. Available IDs: ${evalsFile.evals.map((e) => e.id).join(', ')}`);
+    }
+    evalsFile = { ...evalsFile, evals: filtered };
+  }
+
   const ws = new WorkspaceManager(skillPath, options.workspace);
   const iterationDir = ws.createIteration();
   const runs = options.runs ?? 1;
