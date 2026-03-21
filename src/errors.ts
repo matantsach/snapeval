@@ -1,3 +1,10 @@
+// Exit codes:
+// 0 = success
+// 1 = threshold not met (eval ran successfully but pass rate below threshold)
+// 2 = config/input error (bad JSON, missing fields, invalid flags)
+// 3 = file not found (missing skill dir, missing evals.json, missing script)
+// 4 = runtime error (harness failure, grading failure, timeout)
+
 export class SnapevalError extends Error {
   constructor(message: string, public exitCode: number = 2) {
     super(message);
@@ -5,9 +12,23 @@ export class SnapevalError extends Error {
   }
 }
 
+export class FileNotFoundError extends SnapevalError {
+  constructor(filePath: string, hint?: string) {
+    super(`File not found: ${filePath}${hint ? `. ${hint}` : ''}`, 3);
+    this.name = 'FileNotFoundError';
+  }
+}
+
+export class ThresholdError extends SnapevalError {
+  constructor(actual: number, threshold: number) {
+    super(`Skill pass rate ${(actual * 100).toFixed(1)}% is below threshold ${(threshold * 100).toFixed(1)}%`, 1);
+    this.name = 'ThresholdError';
+  }
+}
+
 export class AdapterNotAvailableError extends SnapevalError {
   constructor(adapterName: string, installHint: string) {
-    super(`${adapterName} is not available. ${installHint}`);
+    super(`${adapterName} is not available. ${installHint}`, 4);
     this.name = 'AdapterNotAvailableError';
   }
 }
@@ -21,14 +42,14 @@ export class RateLimitError extends SnapevalError {
 
 export class TimeoutError extends SnapevalError {
   constructor(evalId: number, timeoutMs: number) {
-    super(`Eval ${evalId} timed out after ${timeoutMs}ms.`);
+    super(`Eval ${evalId} timed out after ${timeoutMs}ms.`, 4);
     this.name = 'TimeoutError';
   }
 }
 
 export class GradingError extends SnapevalError {
   constructor(evalId: number, detail: string) {
-    super(`Grading failed for eval ${evalId}: ${detail}`);
+    super(`Grading failed for eval ${evalId}: ${detail}`, 4);
     this.name = 'GradingError';
   }
 }

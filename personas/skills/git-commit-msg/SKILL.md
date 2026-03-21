@@ -1,6 +1,6 @@
 ---
 name: git-commit-msg
-description: Generates conventional commit messages from git diffs
+description: Generates conventional commit messages from git diffs with scope and breaking change support
 ---
 
 # Git Commit Message Generator
@@ -16,6 +16,20 @@ Use the conventional commits specification:
 - `refactor:` — code restructuring without behavior change
 - `docs:` — documentation only
 - `test:` — adding or updating tests
+
+## Scope
+
+If the diff touches files in a single directory or module, include a scope in parentheses:
+- `feat(auth):` — feature in the auth module
+- `fix(api):` — bug fix in the api module
+
+If files span multiple modules, omit the scope.
+
+## Breaking Changes
+
+If the diff removes a public function, changes a function signature, or removes an export:
+- Use `!` after the prefix: `feat!:` or `feat(auth)!:`
+- This signals a breaking change
 
 ## Rules
 

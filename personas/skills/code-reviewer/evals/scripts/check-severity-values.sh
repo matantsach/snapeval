@@ -10,7 +10,13 @@ if [ ! -f "$OUTPUT_FILE" ]; then
 fi
 
 node -e "
-const obj = JSON.parse(require('fs').readFileSync('$OUTPUT_FILE','utf8'));
+let obj;
+try {
+  obj = JSON.parse(require('fs').readFileSync('$OUTPUT_FILE','utf8'));
+} catch (e) {
+  console.error('FAIL: output is not valid JSON, cannot check severity values');
+  process.exit(1);
+}
 const valid = ['critical','warning','info'];
 for (const [i, issue] of (obj.issues || []).entries()) {
   if (!valid.includes(issue.severity)) {

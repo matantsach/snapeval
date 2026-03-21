@@ -63,7 +63,8 @@ function runScript(
     return { text: `script:${scriptName}`, passed: false, evidence: `Script not found: ${scriptPath}` };
   }
   try {
-    const evidence = execFileSync(scriptPath, [outputDir], { encoding: 'utf-8', timeout: 30000 }).trim();
+    const stdout = execFileSync(scriptPath, [outputDir], { encoding: 'utf-8', timeout: 30000 }).trim();
+    const evidence = stdout || `Script passed: ${scriptName}`;
     return { text: `script:${scriptName}`, passed: true, evidence };
   } catch (err: any) {
     // Extract the most useful error info without raw stack traces

@@ -26,6 +26,7 @@ program
   .option('--runs <n>', 'Runs per eval for statistical significance', '1')
   .option('--concurrency <n>', 'Number of eval cases to run in parallel (1-10)', '1')
   .option('--only <ids>', 'Run only specific eval IDs (comma-separated, e.g. --only 1,3,5)')
+  .option('--threshold <rate>', 'Minimum pass rate (0-1) for exit code 0. Below threshold exits with code 1.')
   .option('--old-skill <path>', 'Compare against old skill version instead of no-skill')
   .option('--verbose', 'Verbose output')
   .argument('[skill-dir]', 'Path to skill directory', process.cwd())
@@ -48,12 +49,16 @@ program
       const only = opts.only
         ? (opts.only as string).split(',').map((s) => parseInt(s.trim(), 10))
         : undefined;
+      const threshold = opts.threshold
+        ? parseFloat(opts.threshold as string)
+        : undefined;
 
       const results = await evalCommand(skillPath, harness, inference, {
         workspace: config.workspace,
         runs: config.runs,
         concurrency: config.concurrency,
         only,
+        threshold,
         oldSkill: opts.oldSkill as string | undefined,
       });
 
@@ -61,7 +66,15 @@ program
       await terminal.report(results);
       console.log(`Results at ${results.iterationDir}`);
       process.exit(0);
-    } catch (err) { handleError(err); }
+    } catch (err: any) {
+      // ThresholdError has results attached — show them before failing
+      if (err.results) {
+        const terminal = new TerminalReporter();
+        await terminal.report(err.results);
+        console.log(`Results at ${err.results.iterationDir}`);
+      }
+      handleError(err);
+    }
   });
 
 // --- review ---

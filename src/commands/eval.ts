@@ -12,7 +12,7 @@ import { WorkspaceManager } from '../engine/workspace.js';
 import { runEval } from '../engine/runner.js';
 import { gradeAssertions } from '../engine/grader.js';
 import { computeBenchmark } from '../engine/aggregator.js';
-import { SnapevalError } from '../errors.js';
+import { SnapevalError, FileNotFoundError, ThresholdError } from '../errors.js';
 
 async function runWithConcurrency<T>(
   tasks: (() => Promise<T>)[],
@@ -60,11 +60,11 @@ export async function evalCommand(
   skillPath: string,
   harness: Harness,
   inference: InferenceAdapter,
-  options: { workspace?: string; runs?: number; oldSkill?: string; concurrency?: number; only?: number[] }
+  options: { workspace?: string; runs?: number; oldSkill?: string; concurrency?: number; only?: number[]; threshold?: number }
 ): Promise<EvalResults> {
   const evalsPath = path.join(skillPath, 'evals', 'evals.json');
   if (!fs.existsSync(evalsPath)) {
-    throw new SnapevalError(`No evals.json found at ${evalsPath}. Create evals/evals.json with test scenarios first.`);
+    throw new FileNotFoundError(evalsPath, 'Create evals/evals.json with test scenarios first');
   }
 
   let evalsFile: EvalsFile;
@@ -158,10 +158,31 @@ export async function evalCommand(
   const evalRuns = await runWithConcurrency(tasks, concurrency);
   const benchmark = computeBenchmark(evalRuns);
 
+  // Add iteration metadata for cross-iteration comparison
+  const benchmarkWithMeta = {
+    ...benchmark,
+    metadata: {
+      eval_count: evalRuns.length,
+      eval_ids: evalRuns.map((r) => r.evalId),
+      skill_name: evalsFile.skill_name,
+      timestamp: new Date().toISOString(),
+    },
+  };
+
   fs.writeFileSync(
     path.join(iterationDir, 'benchmark.json'),
-    JSON.stringify(benchmark, null, 2)
+    JSON.stringify(benchmarkWithMeta, null, 2)
   );
+
+  // Check threshold if set (for CI gating)
+  if (options.threshold !== undefined) {
+    const passRate = benchmark.run_summary.with_skill.pass_rate.mean;
+    if (passRate < options.threshold) {
+      // Still return results so the reporter can display them before the error
+      const results = { skillName: evalsFile.skill_name, evalRuns, benchmark, iterationDir };
+      throw Object.assign(new ThresholdError(passRate, options.threshold), { results });
+    }
+  }
 
   return {
     skillName: evalsFile.skill_name,

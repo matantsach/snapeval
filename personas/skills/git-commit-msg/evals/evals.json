@@ -45,6 +45,16 @@
         "Output is a single line with no line breaks",
         "Output is under 72 characters total"
       ]
+    },
+    {
+      "id": 5,
+      "prompt": "Generate a commit message for this diff:\n```diff\n--- a/README.md\n+++ b/README.md\n@@ -1 +1,3 @@\n # My Project\n+\n+This is a sample project.\n```",
+      "expected_output": "A docs: prefixed commit message for a README change",
+      "files": [],
+      "assertions": [
+        "Output starts with 'docs:' since only documentation was changed",
+        "Output is a single line under 72 characters"
+      ]
     }
   ]
 }

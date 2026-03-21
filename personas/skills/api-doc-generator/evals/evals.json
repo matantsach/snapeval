@@ -61,6 +61,18 @@
         "script:validate-markdown-headers.sh",
         "script:check-endpoint-coverage.sh"
       ]
+    },
+    {
+      "id": 6,
+      "prompt": "Generate API docs for this OpenAPI spec:\n{\"openapi\":\"3.0.0\",\"info\":{\"title\":\"Streaming API\"},\"paths\":{\"/events/stream\":{\"get\":{\"summary\":\"Server-sent events stream\"}},\"/events/subscribe\":{\"post\":{\"summary\":\"Subscribe to events\"}}}}",
+      "expected_output": "Markdown docs for streaming/event endpoints",
+      "files": [],
+      "assertions": [
+        "Output contains sections for /events/stream and /events/subscribe",
+        "Output mentions 'Server-sent events stream' and 'Subscribe to events'",
+        "script:validate-markdown-headers.sh",
+        "script:check-endpoint-coverage.sh"
+      ]
     }
   ]
 }

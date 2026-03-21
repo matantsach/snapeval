@@ -9,7 +9,8 @@
       "assertions": [
         "Output identifies that the function uses subtraction (-) instead of addition (+)",
         "Output includes a suggested fix that uses the + operator",
-        "script:validate-json-structure.sh"
+        "script:validate-json-structure.sh",
+        "script:check-severity-values.sh"
       ]
     },
     {
@@ -31,7 +32,8 @@
       "assertions": [
         "Output does not flag any bugs (no issue with type 'bug')",
         "Output identifies at least one style issue",
-        "script:validate-json-structure.sh"
+        "script:validate-json-structure.sh",
+        "script:check-severity-values.sh"
       ]
     },
     {
@@ -64,6 +66,18 @@
       "assertions": [
         "Output addresses code in at least two languages or mentions both snippets",
         "Output identifies at least one issue across both code blocks",
+        "script:validate-json-structure.sh"
+      ]
+    },
+    {
+      "id": 7,
+      "prompt": "Review this TypeScript code:\n```ts\nfunction getUser<T extends { id: string }>(users: T[], id: string): T | undefined {\n  return users.find(u => u.id === id);\n}\n\nconst result = getUser([{id: '1', name: 'Alice'}], '1');\nconsole.log(result.name);\n```",
+      "expected_output": "Identifies the potential null reference on result.name since find() can return undefined",
+      "files": [],
+      "assertions": [
+        "Output identifies the null/undefined reference risk on result.name",
+        "Output notes that .find() can return undefined",
+        "Output suggests using optional chaining (?.) or a null check",
         "script:validate-json-structure.sh"
       ]
     }
