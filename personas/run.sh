@@ -38,6 +38,7 @@ for persona in "${PERSONAS[@]}"; do
   echo "=== Running $persona ==="
   claude -p "$(cat "$PROMPT_FILE")" \
     --output-format text \
+    --allowedTools "Bash,Read,Write,Edit,Glob,Grep" \
     > "$OUTPUT_DIR/$persona.txt" 2>&1 || true
   echo "=== $persona done → $OUTPUT_DIR/$persona.txt ==="
 done
