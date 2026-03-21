@@ -3,7 +3,6 @@ import { Command } from 'commander';
 import { resolveConfig } from '../src/config.js';
 import { resolveInference } from '../src/adapters/inference/resolve.js';
 import { resolveHarness } from '../src/adapters/harness/resolve.js';
-import { initCommand } from '../src/commands/init.js';
 import { evalCommand } from '../src/commands/eval.js';
 import { reviewCommand } from '../src/commands/review.js';
 import { TerminalReporter } from '../src/adapters/report/terminal.js';
@@ -16,28 +15,6 @@ program
   .name('snapeval')
   .description('Harness-agnostic eval runner for agentskills.io skills')
   .version('2.0.0');
-
-// --- init ---
-program
-  .command('init')
-  .description('Generate evals.json from SKILL.md (prompts + expected outputs, no assertions)')
-  .option('--harness <harness>', 'Harness to use')
-  .option('--inference <inference>', 'Inference adapter to use')
-  .option('--verbose', 'Verbose output')
-  .argument('[skill-dir]', 'Path to skill directory', process.cwd())
-  .action(async (skillDir: string, opts: Record<string, string | boolean>) => {
-    try {
-      const skillPath = path.resolve(skillDir);
-      const config = resolveConfig(
-        { harness: opts.harness as string, inference: opts.inference as string },
-        process.cwd(), skillPath
-      );
-      const inference = resolveInference(config.inference);
-      await initCommand(skillPath, inference);
-      console.log(`Generated evals at ${path.join(skillPath, 'evals', 'evals.json')}`);
-      process.exit(0);
-    } catch (err) { handleError(err); }
-  });
 
 // --- eval ---
 program
