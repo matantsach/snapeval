@@ -1,5 +1,18 @@
 # Changelog
 
+## [2.1.0](https://github.com/matantsach/snapeval/compare/snapeval-v2.0.0...snapeval-v2.1.0) (2026-03-21)
+
+
+### Features
+
+* parallel execution, threshold gating, and eval engine improvements ([#40](https://github.com/matantsach/snapeval/issues/40)) ([5388b99](https://github.com/matantsach/snapeval/commit/5388b99932c62d6260d3760e3917d28f0ca1c9ca))
+
+
+### Bug Fixes
+
+* align SKILL.md with eval engine — assertion guidance, dead error removal ([#39](https://github.com/matantsach/snapeval/issues/39)) ([252411b](https://github.com/matantsach/snapeval/commit/252411bcc0a9af9576ec384107586ea6d83d0d78))
+* update SKILL.md to write evals.json directly instead of calling init ([cf8a5db](https://github.com/matantsach/snapeval/commit/cf8a5db9ff685fe8a7579fe3cafde9b0eab18bcf))
+
 ## [2.0.0](https://github.com/matantsach/snapeval/compare/snapeval-v1.8.0...snapeval-v2.0.0) (2026-03-21)
 
 
