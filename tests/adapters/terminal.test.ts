@@ -73,19 +73,19 @@ describe('TerminalReporter', () => {
     expect(output).toContain('#2');
   });
 
-  it('prints with_skill and without_skill labels', async () => {
+  it('prints Skill and Baseline labels', async () => {
     const reporter = new TerminalReporter();
     await reporter.report(makeResults([makeEvalRun(1, 0.75)]));
     const output = logLines.join('\n');
-    expect(output).toContain('with_skill');
-    expect(output).toContain('without_skill');
+    expect(output).toContain('Skill:');
+    expect(output).toContain('Baseline:');
   });
 
-  it('prints delta pass rate', async () => {
+  it('prints improvement percentage', async () => {
     const reporter = new TerminalReporter();
     await reporter.report(makeResults([makeEvalRun(1, 1.0)]));
     const output = logLines.join('\n');
-    expect(output).toContain('50.0% pass rate');
+    expect(output).toContain('+50.0%');
   });
 
   it('prints n/a when no grading available', async () => {
@@ -106,8 +106,8 @@ describe('TerminalReporter', () => {
     const reporter = new TerminalReporter();
     await reporter.report(makeResults([makeEvalRun(1, 1.0)]));
     const output = logLines.join('\n');
-    // 1500ms => 1.50s
-    expect(output).toContain('1.50');
+    // 1500ms => 1.5s
+    expect(output).toContain('1.5s');
   });
 
   it('name is "terminal"', () => {

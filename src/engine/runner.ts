@@ -33,21 +33,22 @@ export async function runEval(
   const baselineVariant = oldSkillPath ? 'old_skill' : 'without_skill';
   const baselineDir = path.join(evalDir, baselineVariant);
 
-  const withSkillResult = await harness.run({
-    skillPath,
-    prompt: evalCase.prompt,
-    files: evalCase.files,
-    outputDir: path.join(withSkillDir, 'outputs'),
-  });
+  const [withSkillResult, baselineResult] = await Promise.all([
+    harness.run({
+      skillPath,
+      prompt: evalCase.prompt,
+      files: evalCase.files,
+      outputDir: path.join(withSkillDir, 'outputs'),
+    }),
+    harness.run({
+      skillPath: oldSkillPath,
+      prompt: evalCase.prompt,
+      files: evalCase.files,
+      outputDir: path.join(baselineDir, 'outputs'),
+    }),
+  ]);
   writeTiming(withSkillDir, withSkillResult);
   writeOutput(withSkillDir, withSkillResult);
-
-  const baselineResult = await harness.run({
-    skillPath: oldSkillPath,
-    prompt: evalCase.prompt,
-    files: evalCase.files,
-    outputDir: path.join(baselineDir, 'outputs'),
-  });
   writeTiming(baselineDir, baselineResult);
   writeOutput(baselineDir, baselineResult);
 

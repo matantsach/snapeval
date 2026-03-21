@@ -33,7 +33,7 @@ export async function getClient(): Promise<any> {
     );
   }
 
-  clientInstance = new CopilotClient();
+  clientInstance = new CopilotClient({ logLevel: 'none' });
   await clientInstance.start();
   clientStarted = true;
   return clientInstance;

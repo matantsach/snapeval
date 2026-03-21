@@ -142,4 +142,5 @@ export interface SnapevalConfig {
   inference: string;
   workspace: string;
   runs: number;
+  concurrency: number;
 }

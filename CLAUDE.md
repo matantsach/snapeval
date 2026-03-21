@@ -25,7 +25,7 @@ npx tsx bin/snapeval.ts <command> <skill-path>  # Run any CLI command locally
 
 Each layer is an interface in `src/types.ts` with implementations in `src/adapters/`:
 
-- **Harness** (`src/adapters/harness/`) — How to invoke a skill. Implements `run()` with and without SKILL.md. Built-in: `CopilotCLIHarness`. Session isolation required per run.
+- **Harness** (`src/adapters/harness/`) — How to invoke a skill. Implements `run()` with and without SKILL.md. Built-in: `CopilotSDKHarness` (default, uses `@github/copilot-sdk` with native skill loading via `skillDirectories`), `CopilotCLIHarness` (fallback, shells out to `copilot` CLI). Session isolation required per run.
 - **InferenceAdapter** (`src/adapters/inference/`) — LLM for grading assertions. `CopilotInference`, `CopilotSDKInference`, and `GitHubModelsInference` with auto-resolution in `resolve.ts`.
 
 ### Engine Modules (`src/engine/`)

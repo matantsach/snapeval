@@ -3,10 +3,11 @@ import * as path from 'node:path';
 import type { SnapevalConfig } from './types.js';
 
 export const DEFAULT_CONFIG: SnapevalConfig = {
-  harness: 'copilot-cli',
+  harness: 'copilot-sdk',
   inference: 'auto',
   workspace: '../{skill_name}-workspace',
   runs: 1,
+  concurrency: 1,
 };
 
 function loadConfigFile(dirPath: string): Partial<SnapevalConfig> | null {
