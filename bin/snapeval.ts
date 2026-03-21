@@ -1,4 +1,13 @@
 #!/usr/bin/env tsx
+
+// Suppress Node.js ExperimentalWarning (e.g., SQLite) from polluting output
+const _origEmit = process.emit;
+// @ts-ignore — override to filter warnings
+process.emit = function (event: string, ...args: any[]) {
+  if (event === 'warning' && args[0]?.name === 'ExperimentalWarning') return false;
+  return _origEmit.apply(process, [event, ...args] as any);
+};
+
 import { Command } from 'commander';
 import { resolveConfig } from '../src/config.js';
 import { resolveInference } from '../src/adapters/inference/resolve.js';

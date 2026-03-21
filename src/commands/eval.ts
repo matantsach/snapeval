@@ -32,6 +32,32 @@ async function runWithConcurrency<T>(
 
 const MAX_CONCURRENCY = 10;
 
+/**
+ * Average pass rates across multiple grading runs.
+ * Uses the last run's assertion_results for display, but averages the
+ * pass_rate across all runs so --runs N provides statistical significance.
+ */
+function averageGradings(gradings: (GradingResult | null)[]): GradingResult | undefined {
+  const valid = gradings.filter((g): g is GradingResult => g !== null);
+  if (valid.length === 0) return undefined;
+  if (valid.length === 1) return valid[0];
+
+  const avgPassRate = valid.reduce((sum, g) => sum + g.summary.pass_rate, 0) / valid.length;
+  const avgPassed = valid.reduce((sum, g) => sum + g.summary.passed, 0) / valid.length;
+  const avgFailed = valid.reduce((sum, g) => sum + g.summary.failed, 0) / valid.length;
+  const last = valid[valid.length - 1];
+
+  return {
+    assertion_results: last.assertion_results,
+    summary: {
+      passed: Math.round(avgPassed),
+      failed: Math.round(avgFailed),
+      total: last.summary.total,
+      pass_rate: avgPassRate,
+    },
+  };
+}
+
 function validateEvalsFile(evalsFile: EvalsFile, evalsPath: string): void {
   if (!evalsFile.skill_name || typeof evalsFile.skill_name !== 'string') {
     throw new SnapevalError(`Invalid evals.json at ${evalsPath}: missing or invalid "skill_name" field.`);
@@ -85,6 +111,10 @@ export async function evalCommand(
     evalsFile = { ...evalsFile, evals: filtered };
   }
 
+  if (options.threshold !== undefined && (options.threshold < 0 || options.threshold > 1)) {
+    throw new SnapevalError(`Threshold must be between 0 and 1 (e.g., 0.8 for 80%). Got: ${options.threshold}`);
+  }
+
   const ws = new WorkspaceManager(skillPath, options.workspace);
   const iterationDir = ws.createIteration();
 
@@ -136,21 +166,39 @@ export async function evalCommand(
       throw new SnapevalError(`No runs completed for eval ${evalCase.id}`);
     }
 
-    // Use the last run's grading as the primary result (written to grading.json)
-    // but all gradings contribute to benchmark stats via pass rates
-    const lastGrading = allGradings[allGradings.length - 1];
+    // Average pass rates across all runs for statistical significance
+    const withSkillGrading = averageGradings(allGradings.map(g => g.withSkill));
+    const withoutSkillGrading = averageGradings(allGradings.map(g => g.withoutSkill));
+
+    // When runs > 1, overwrite grading.json with averaged results so
+    // artifacts match the benchmark (not just the last run's raw data)
+    if (runs > 1) {
+      if (withSkillGrading) {
+        fs.writeFileSync(
+          path.join(evalDir, 'with_skill', 'grading.json'),
+          JSON.stringify(withSkillGrading, null, 2),
+        );
+      }
+      if (withoutSkillGrading) {
+        fs.writeFileSync(
+          path.join(evalDir, baselineVariant, 'grading.json'),
+          JSON.stringify(withoutSkillGrading, null, 2),
+        );
+      }
+    }
 
     return {
       evalId: evalCase.id,
       slug,
+      label: evalCase.label,
       prompt: evalCase.prompt,
       withSkill: {
         output: lastRun.withSkill.output,
-        grading: lastGrading.withSkill ?? undefined,
+        grading: withSkillGrading,
       },
       withoutSkill: {
         output: lastRun.withoutSkill.output,
-        grading: lastGrading.withoutSkill ?? undefined,
+        grading: withoutSkillGrading,
       },
     };
   });
@@ -165,13 +213,15 @@ export async function evalCommand(
       eval_count: evalRuns.length,
       eval_ids: evalRuns.map((r) => r.evalId),
       skill_name: evalsFile.skill_name,
+      runs_per_eval: runs,
       timestamp: new Date().toISOString(),
     },
   };
 
   fs.writeFileSync(
     path.join(iterationDir, 'benchmark.json'),
-    JSON.stringify(benchmarkWithMeta, null, 2)
+    JSON.stringify(benchmarkWithMeta, (_key, value) =>
+      typeof value === 'number' ? Math.round(value * 10000) / 10000 : value, 2)
   );
 
   // Check threshold if set (for CI gating)

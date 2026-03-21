@@ -1,131 +1,178 @@
 # snapeval
 
-Semantic snapshot testing for AI skills. Zero assertions. AI-driven. Free inference.
+Harness-agnostic eval runner for [agentskills.io](https://agentskills.io) skills.
 
 [![CI](https://github.com/matantsach/snapeval/actions/workflows/ci.yml/badge.svg)](https://github.com/matantsach/snapeval/actions/workflows/ci.yml)
 [![npm version](https://img.shields.io/npm/v/snapeval.svg)](https://www.npmjs.com/package/snapeval)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-snapeval evaluates [agentskills.io](https://agentskills.io) skills through semantic snapshot testing. It analyzes your skill's `SKILL.md`, collaborates with you to design a test strategy through an interactive browser-based viewer, then captures baselines and detects regressions — all with zero manual test authoring.
+snapeval runs every eval case **with and without** your skill, grades assertions, and computes a benchmark delta — so you can see exactly what value your skill adds.
 
-## Why snapeval?
-
-- **Interactive ideation** — AI decomposes your skill into behaviors, dimensions, and failure modes, then opens a visual viewer where you shape the test strategy together.
-- **Zero assertions** — No test logic to write. The AI generates realistic, messy prompts that mirror how real users actually type.
-- **Semantic comparison** — Tiered pipeline: schema check (free) → LLM judge with order-swap debiasing (when needed). Most checks cost $0.
-- **Free inference** — Uses gpt-5-mini via Copilot CLI and GitHub Models API.
-- **Platform-agnostic** — Adapter-based architecture. Copilot CLI first, others coming.
-
-## Install
-
-### From the marketplace
-
-The snapeval marketplace is bundled with the repo. Add it once, then install by name:
-
-```bash
-copilot plugin marketplace add matantsach/snapeval
-copilot plugin install snapeval@snapeval-marketplace
+```
+snapeval — greeter
+Baseline = without SKILL.md (raw AI response)
+────────────────────────────────────────────────────────────
+  #1 formal greeting for Eleanor
+    Skill: 100% | Baseline: 33% | 5.2s
+  #2 casual greeting for Marcus
+    Skill: 100% ↑ was 67% | Baseline: 67% | 2.7s
+  #3 pirate greeting for Zoe
+    Skill: 100% | Baseline: 67% | 2.5s
+────────────────────────────────────────────────────────────
+Summary:
+  Skill pass rate:    100.0%
+  Baseline pass rate: 55.6%
+  Improvement:        +44.4%
 ```
 
-### From GitHub directly
+## How it works
+
+1. You write a `SKILL.md` and an `evals.json` with test cases and assertions
+2. snapeval runs each eval **twice** — once with your skill loaded, once without (baseline)
+3. Assertions are graded by an LLM judge (semantic) and/or shell scripts (deterministic)
+4. A benchmark shows where your skill adds value vs. where the raw AI already handles it
+
+## Quick start
+
+### As a Copilot plugin
 
 ```bash
 copilot plugin install matantsach/snapeval
 ```
 
-### Verify installation
+Then in Copilot CLI, just say `evaluate my skill` — the snapeval skill handles the rest.
+
+### Standalone CLI
 
 ```bash
-copilot plugin list
+git clone https://github.com/matantsach/snapeval.git
+cd snapeval && npm install
+npx tsx bin/snapeval.ts eval <skill-dir>
 ```
 
-## Usage
-
-In Copilot CLI, just talk naturally:
-
-```
-> evaluate my greeter skill
-> test skills/code-reviewer for regressions
-> check if I broke anything in my-skill
-> approve scenario 3
-```
-
-snapeval activates automatically based on your prompt.
-
-### What happens when you evaluate
-
-1. **Analyze** — snapeval reads your SKILL.md and reasons through behaviors, input dimensions, failure modes, and ambiguities
-2. **View** — A browser-based viewer opens showing the analysis with proposed scenarios you can toggle, edit, and extend
-3. **Confirm** — You review, make changes, and click "Confirm & Run" to export your plan
-4. **Capture** — snapeval writes `evals.json` and runs the scenarios against your skill, saving baseline snapshots
-
-After initial setup, use `check` to detect regressions and `approve` to accept intentional changes.
-
-## CLI Reference
-
-The CLI is the headless backend — useful for CI, scripting, and power users.
-
-```
-snapeval init [skill-dir]         Generate test cases from SKILL.md
-snapeval capture [skill-dir]      Run scenarios and save baseline snapshots
-snapeval check [skill-dir]        Compare current output against baselines
-snapeval approve [skill-dir]      Approve regressed scenarios as new baselines
-snapeval report [skill-dir]       Write results with optional HTML viewer
-snapeval ideate [skill-dir]       Open the interactive scenario ideation viewer
-```
-
-| Flag | Description | Default |
-|------|-------------|---------|
-| `--adapter <name>` | Skill adapter | `copilot-cli` |
-| `--inference <name>` | Inference adapter | `auto` |
-| `--budget <amount>` | Spend cap in USD | `unlimited` |
-| `--runs <n>` | Baseline runs per scenario | `1` |
-| `--ci` | CI mode: exit 1 on regressions | off |
-| `--html` | Generate HTML report viewer | off |
-| `--scenario <ids>` | Comma-separated scenario IDs | all |
-| `--verbose` | Verbose output | off |
-
-## How It Works
-
-```
-SKILL.md → AI analyzes skill → Interactive ideation viewer → Capture baselines
-                                                                     ↓
-              Modify skill → Re-run scenarios → Compare via tiered pipeline
-                                                                     ↓
-                                     Schema match? → PASS (free, instant)
-                                     LLM Judge agrees? → PASS/REGRESSED
-```
-
-### Comparison Pipeline
-
-| Tier | Method | Cost | When Used |
-|------|--------|------|-----------|
-| 1 | Schema check | Free | Structural skeleton matches |
-| 2 | LLM judge (order-swap) | Cheap | Schema differs, needs semantic comparison |
-
-Most stable skills are checked entirely at Tier 1 — $0.00 per run.
-
-## Eval Format
-
-snapeval follows the [agentskills.io evaluation standard](https://agentskills.io/skill-creation/evaluating-skills):
+## Eval format
 
 ```
 my-skill/
 ├── SKILL.md
 └── evals/
-    ├── evals.json          ← Test scenarios (AI-generated or from ideation)
-    ├── analysis.json       ← Skill analysis (behaviors, dimensions, gaps)
-    ├── snapshots/          ← Captured baseline outputs
-    └── results/
-        └── iteration-N/
-            ├── grading.json
-            ├── timing.json
-            └── benchmark.json
+    ├── evals.json
+    └── scripts/         ← optional deterministic checks
+        └── validate.sh
 ```
 
-## In CI
+**evals.json:**
 
-Commit your `evals.json` and `snapshots/` directory, then add a workflow:
+```json
+{
+  "skill_name": "greeter",
+  "evals": [
+    {
+      "id": 1,
+      "label": "formal greeting for Eleanor",
+      "prompt": "Can you give me a formal greeting for Eleanor?",
+      "expected_output": "Returns the formal greeting addressed to Eleanor.",
+      "assertions": [
+        "Output contains the name Eleanor",
+        "Output uses a formal tone",
+        "script:validate.sh"
+      ]
+    }
+  ]
+}
+```
+
+| Field | Required | Description |
+|-------|----------|-------------|
+| `id` | yes | Unique numeric identifier |
+| `prompt` | yes | The user prompt sent to the harness |
+| `expected_output` | yes | Human description of the expected behavior |
+| `label` | no | Human-readable name shown in terminal output |
+| `slug` | no | Filesystem-safe name for the eval directory |
+| `assertions` | no | List of assertions to grade (LLM semantic or `script:` prefixed) |
+| `files` | no | Input files to attach to the prompt |
+
+### Assertions
+
+**Semantic** — graded by an LLM. Write specific, verifiable statements:
+
+```
+"Output contains a YAML block with an 'id' field for each issue"
+"Response declines because the pipeline already has unclaimed issues"
+```
+
+**Script** — prefix with `script:`. Scripts live in `evals/scripts/`, receive the output directory as `$1`, and pass on exit code 0:
+
+```
+"script:validate-json-structure.sh"
+```
+
+## CLI reference
+
+### `eval`
+
+Run evals, grade assertions, compute benchmark.
+
+```bash
+npx snapeval eval [skill-dir] [options]
+```
+
+| Flag | Description | Default |
+|------|-------------|---------|
+| `--harness <name>` | Harness adapter | `copilot-sdk` |
+| `--inference <name>` | Inference adapter for grading | `auto` |
+| `--workspace <path>` | Output directory | `../{skill_name}-workspace` |
+| `--runs <n>` | Harness invocations per eval for statistical averaging | `1` |
+| `--concurrency <n>` | Parallel eval cases (1-10) | `1` |
+| `--only <ids>` | Run specific eval IDs (e.g. `--only 1,3,5`) | all |
+| `--threshold <rate>` | Minimum pass rate 0-1 for exit code 0 | none |
+| `--old-skill <path>` | Compare against old skill version | none |
+| `--verbose` | Verbose output | off |
+
+### `review`
+
+Run eval + generate HTML report + open in browser.
+
+```bash
+npx snapeval review [skill-dir] [options]
+```
+
+Same flags as `eval`, plus `--no-open` to skip opening the browser.
+
+### Exit codes
+
+| Code | Meaning |
+|------|---------|
+| 0 | Success |
+| 1 | Threshold not met (eval ran but pass rate below `--threshold`) |
+| 2 | Config/input error (bad JSON, missing fields, invalid flags) |
+| 3 | File not found (missing skill dir, evals.json, or script) |
+| 4 | Runtime error (harness failure, grading failure, timeout) |
+
+## Output artifacts
+
+Each run creates an iteration directory:
+
+```
+workspace/
+└── iteration-1/
+    ├── benchmark.json       ← aggregate stats with delta
+    ├── SKILL.md.snapshot    ← copy of skill used
+    └── eval-{slug}/
+        ├── with_skill/
+        │   ├── outputs/output.txt
+        │   ├── timing.json
+        │   ├── grading.json
+        │   └── transcript.log
+        └── without_skill/
+            ├── outputs/output.txt
+            ├── timing.json
+            └── grading.json
+```
+
+**benchmark.json** includes metadata: `eval_count`, `eval_ids`, `skill_name`, `runs_per_eval`, `timestamp`.
+
+## CI integration
 
 ```yaml
 name: Skill Evaluation
@@ -140,22 +187,10 @@ jobs:
         with:
           node-version: 22
       - run: npm ci
-      - run: npx snapeval check skills/my-skill --ci
+      - run: npx snapeval eval skills/my-skill --threshold 0.8 --runs 3
 ```
 
-## Local Development
-
-```bash
-git clone https://github.com/matantsach/snapeval.git
-cd snapeval && npm install
-npx tsx bin/snapeval.ts check <skill-path>
-```
-
-Or load as a local plugin:
-
-```bash
-copilot plugin install ./path/to/snapeval
-```
+Exit code 1 when pass rate falls below threshold — blocks the PR.
 
 ## Configuration
 
@@ -163,32 +198,37 @@ Create `snapeval.config.json` in your skill or project root:
 
 ```json
 {
-  "adapter": "copilot-cli",
+  "harness": "copilot-sdk",
   "inference": "auto",
-  "runs": 3,
-  "budget": "unlimited"
+  "workspace": "../{skill_name}-workspace",
+  "runs": 1,
+  "concurrency": 1
 }
 ```
 
-CLI flags override config file values.
+Resolution order: defaults → project config → skill-dir config → CLI flags.
 
-## Architecture
+## Harness adapters
 
-Three surfaces over a shared core engine:
+| Adapter | Description | Default |
+|---------|-------------|---------|
+| `copilot-sdk` | Programmatic via `@github/copilot-sdk` with native skill loading | yes |
+| `copilot-cli` | Shells out to `copilot` CLI binary | no |
 
-- **Plugin** (SKILL.md) — Interactive product. AI handles everything.
-- **CLI** (`npx snapeval`) — Headless backend for CI and power users.
-- **GitHub Action** — CI wrapper (planned).
+The SDK harness loads skills natively via `skillDirectories`, captures full transcripts, and extracts real token counts from `assistant.usage` events.
 
-Adapter layers for platform independence:
+## Inference adapters
 
-- **SkillAdapter** — How to invoke a skill (Copilot CLI, others planned)
-- **InferenceAdapter** — Where to get LLM capabilities (Copilot gpt-5-mini, GitHub Models API)
-- **ReportAdapter** — How to present results (terminal, JSON, HTML viewer)
+| Adapter | Description |
+|---------|-------------|
+| `auto` | Copilot CLI if available, else GitHub Models API |
+| `copilot` | Copilot CLI (`copilot` binary) |
+| `copilot-sdk` | `@github/copilot-sdk` programmatic |
+| `github-models` | GitHub Models API (requires `GITHUB_TOKEN`) |
 
 ## Contributing
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
+See [CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## License
 

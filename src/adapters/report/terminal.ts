@@ -33,10 +33,9 @@ function loadPreviousIteration(iterationDir: string): PreviousIteration | null {
   }
 }
 
-function evalLabel(run: { evalId: number; slug: string; prompt: string }): string {
-  // Use expected_output or slug as a readable label instead of truncated prompt
+function evalLabel(run: { evalId: number; slug: string; label?: string; prompt: string }): string {
+  if (run.label) return run.label;
   if (run.slug && run.slug !== `${run.evalId}`) return run.slug;
-  // Truncate prompt but show first meaningful line
   const firstLine = run.prompt.split('\n')[0].slice(0, 60);
   return firstLine;
 }

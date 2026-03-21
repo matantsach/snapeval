@@ -5,6 +5,7 @@ import type { Harness, HarnessRunResult, EvalCase, TimingData } from '../types.j
 interface RunEvalResult {
   evalId: number;
   slug: string;
+  label?: string;
   prompt: string;
   withSkill: { output: HarnessRunResult };
   withoutSkill: { output: HarnessRunResult };
@@ -55,6 +56,7 @@ export async function runEval(
   return {
     evalId: evalCase.id,
     slug: evalCase.slug ?? `${evalCase.id}`,
+    label: evalCase.label,
     prompt: evalCase.prompt,
     withSkill: { output: withSkillResult },
     withoutSkill: { output: baselineResult },

@@ -33,7 +33,9 @@ export async function getClient(): Promise<any> {
     );
   }
 
-  clientInstance = new CopilotClient({ logLevel: 'none' });
+  // Suppress ExperimentalWarning (e.g., SQLite) in the spawned CLI subprocess
+  const env = { ...process.env, NODE_OPTIONS: [process.env.NODE_OPTIONS, '--no-warnings'].filter(Boolean).join(' ') };
+  clientInstance = new CopilotClient({ logLevel: 'none', env });
   await clientInstance.start();
   clientStarted = true;
   return clientInstance;
