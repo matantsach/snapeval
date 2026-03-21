@@ -94,12 +94,21 @@ echo "[alex] stage N complete" >> personas/progress.log
 
 ## Output Requirements
 
-CRITICAL: Your final message MUST contain ALL feedback JSON objects from every stage, plus a brief summary. This is the only output that gets captured. Structure your final message as:
+CRITICAL: After EACH stage, write that stage's feedback JSON to a file:
+```bash
+cat > personas/results/alex-stage-N.json << 'FEEDBACK'
+{ ... your feedback JSON ... }
+FEEDBACK
+```
 
-1. All stage feedback JSON objects (one per stage)
-2. A short summary of top issues
+After ALL stages are complete, write a final summary:
+```bash
+cat > personas/results/alex-summary.md << 'SUMMARY'
+... your top issues summary ...
+SUMMARY
+```
 
-If you don't include everything in your final message, it will be lost.
+This ensures no feedback is lost regardless of context length.
 
 ## Important
 
