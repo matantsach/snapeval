@@ -15,7 +15,7 @@ Run snapeval against the `api-doc-generator` skill through 4 stages. After each 
 
 ### Stage 1: First Eval Run
 
-1. Run: `npx tsx bin/snapeval.ts eval personas/skills/api-doc-generator --workspace personas/skills/api-doc-generator-workspace`
+1. Run: `npx tsx bin/snapeval.ts eval personas/skills/api-doc-generator --workspace personas/skills/api-doc-generator-workspace --concurrency 3`
 2. Note the exit code: `echo $?`
 3. Read terminal output. Is it parseable or just human-readable?
 4. Read all JSON artifacts in the workspace. Validate they parse cleanly.
@@ -30,7 +30,7 @@ Questions to answer as Sam:
 ### Stage 2: Re-check After Skill Change
 
 1. Run: `cp personas/skills/api-doc-generator/SKILL-v2.md personas/skills/api-doc-generator/SKILL.md`
-2. Run: `npx tsx bin/snapeval.ts eval personas/skills/api-doc-generator --workspace personas/skills/api-doc-generator-workspace`
+2. Run: `npx tsx bin/snapeval.ts eval personas/skills/api-doc-generator --workspace personas/skills/api-doc-generator-workspace --concurrency 3`
 3. Compare `benchmark.json` between iteration-1 and iteration-2 programmatically.
 4. Produce feedback JSON.
 
@@ -57,7 +57,7 @@ Questions to answer as Sam:
      ]
    }
    ```
-3. Run: `npx tsx bin/snapeval.ts eval personas/skills/api-doc-generator --workspace personas/skills/api-doc-generator-workspace`
+3. Run: `npx tsx bin/snapeval.ts eval personas/skills/api-doc-generator --workspace personas/skills/api-doc-generator-workspace --concurrency 3`
 4. Produce feedback JSON.
 
 Questions to answer as Sam:
@@ -101,6 +101,15 @@ After each stage, output a JSON object:
     }
   ]
 }
+```
+
+## Progress Tracking
+
+Before starting each stage and after completing it, write a progress marker:
+```bash
+echo "[sam] stage N starting" >> personas/progress.log
+# ... do the stage work ...
+echo "[sam] stage N complete" >> personas/progress.log
 ```
 
 ## Important

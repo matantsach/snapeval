@@ -7,6 +7,7 @@ evals/results/
 # But track our own plugin's evals
 !skills/snapeval/evals/
 personas/results/
+personas/progress.log
 personas/skills/*-workspace/
 .claude/worktrees/
 .playwright-mcp/

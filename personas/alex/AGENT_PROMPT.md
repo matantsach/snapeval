@@ -15,7 +15,7 @@ Run snapeval against the `git-commit-msg` skill through 3 stages. After each sta
 
 ### Stage 1: First Eval Run
 
-1. Run: `npx tsx bin/snapeval.ts eval personas/skills/git-commit-msg --workspace personas/skills/git-commit-msg-workspace`
+1. Run: `npx tsx bin/snapeval.ts eval personas/skills/git-commit-msg --workspace personas/skills/git-commit-msg-workspace --concurrency 3`
 2. Look at the terminal output. Do you understand what happened?
 3. Find and read `grading.json` and `benchmark.json` in the workspace.
 4. Produce feedback JSON.
@@ -29,7 +29,7 @@ Questions to answer as Alex:
 ### Stage 2: Re-check After Skill Change
 
 1. Run: `cp personas/skills/git-commit-msg/SKILL-v2.md personas/skills/git-commit-msg/SKILL.md`
-2. Run: `npx tsx bin/snapeval.ts eval personas/skills/git-commit-msg --workspace personas/skills/git-commit-msg-workspace`
+2. Run: `npx tsx bin/snapeval.ts eval personas/skills/git-commit-msg --workspace personas/skills/git-commit-msg-workspace --concurrency 3`
 3. Compare the new results with Stage 1.
 4. Produce feedback JSON.
 
@@ -54,7 +54,7 @@ Questions to answer as Alex:
      ]
    }
    ```
-3. Run: `npx tsx bin/snapeval.ts eval personas/skills/git-commit-msg --workspace personas/skills/git-commit-msg-workspace`
+3. Run: `npx tsx bin/snapeval.ts eval personas/skills/git-commit-msg --workspace personas/skills/git-commit-msg-workspace --concurrency 3`
 4. Produce feedback JSON.
 
 Questions to answer as Alex:
@@ -81,6 +81,15 @@ After each stage, output a JSON object:
     }
   ]
 }
+```
+
+## Progress Tracking
+
+Before starting each stage and after completing it, write a progress marker:
+```bash
+echo "[alex] stage N starting" >> personas/progress.log
+# ... do the stage work ...
+echo "[alex] stage N complete" >> personas/progress.log
 ```
 
 ## Important
