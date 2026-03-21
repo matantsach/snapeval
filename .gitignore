@@ -6,6 +6,7 @@ evals/results/
 
 # But track our own plugin's evals
 !skills/snapeval/evals/
+.claude/worktrees/
 .playwright-mcp/
 .heartbeat/
 firebase-debug.log
