@@ -124,9 +124,9 @@ When the user wants to add, edit, or remove specific eval cases (not regenerate 
 
 1. Read the existing `evals/evals.json`
 2. Make the requested change (add new eval, modify assertion, remove eval)
-3. Preserve all unchanged evals — never regenerate the full file
-4. For new evals, assign the next available ID
-5. Suggest running just the new/modified eval first: `npx snapeval eval <skill-path> --only <id>`
+3. Preserve all unchanged evals — never regenerate the full file. Never renumber existing eval IDs.
+4. For new evals, append with the next available ID (e.g., if max ID is 7, use 8)
+5. Run just the new/modified eval to verify it works: `npx snapeval eval <skill-path> --only <new-id>`
 
 ## Re-eval After Skill Change
 
