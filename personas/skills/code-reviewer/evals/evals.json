@@ -1,0 +1,71 @@
+{
+  "skill_name": "code-reviewer",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Review this code for bugs:\n```js\nfunction add(a, b) { return a - b; }\n```",
+      "expected_output": "Identifies the subtraction bug in the add function",
+      "files": [],
+      "assertions": [
+        "Output identifies that the function uses subtraction (-) instead of addition (+)",
+        "Output includes a suggested fix that uses the + operator",
+        "script:validate-json-structure.sh"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "Review this code:\n```js\nfunction greet(name) {\n  return `Hello, ${name}!`;\n}\n```",
+      "expected_output": "Clean code with no bugs — should return empty issues array",
+      "files": [],
+      "assertions": [
+        "Output JSON has an empty issues array or issues array with zero entries",
+        "Output summary indicates no issues or clean code",
+        "script:validate-json-structure.sh"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "Review this code:\n```python\ndef calculate_total(items):\n    total=0\n    for i in items:\n        total=total+i['price']\n    return total\n```",
+      "expected_output": "Style issues only — missing spaces around operators, using 'i' as variable name",
+      "files": [],
+      "assertions": [
+        "Output does not flag any bugs (no issue with type 'bug')",
+        "Output identifies at least one style issue",
+        "script:validate-json-structure.sh"
+      ]
+    },
+    {
+      "id": 4,
+      "prompt": "Review this code:\n```\n```",
+      "expected_output": "Handles empty input gracefully with unsupported input message",
+      "files": [],
+      "assertions": [
+        "Output JSON has an empty issues array",
+        "Output summary mentions 'unsupported' or 'cannot review' or 'empty'",
+        "script:validate-json-structure.sh"
+      ]
+    },
+    {
+      "id": 5,
+      "prompt": "Review this code:\n```\n\\x89PNG\\r\\n\\x1a\\n\\x00\\x00\\x00\\rIHDR\n```",
+      "expected_output": "Recognizes binary content and returns unsupported input",
+      "files": [],
+      "assertions": [
+        "Output JSON has an empty issues array",
+        "Output summary mentions 'unsupported' or 'cannot review' or 'binary'",
+        "script:validate-json-structure.sh"
+      ]
+    },
+    {
+      "id": 6,
+      "prompt": "Review this code:\n```ts\ninterface User {\n  name: string;\n  age: number;\n}\n\nfunction isAdult(user: User): boolean {\n  return user.age > 18;\n}\n```\n\n```python\ndef is_adult(user):\n    return user['age'] > 18\n```",
+      "expected_output": "Reviews both TypeScript and Python code, may note off-by-one in age check (18 vs 18+)",
+      "files": [],
+      "assertions": [
+        "Output addresses code in at least two languages or mentions both snippets",
+        "Output identifies at least one issue across both code blocks",
+        "script:validate-json-structure.sh"
+      ]
+    }
+  ]
+}
