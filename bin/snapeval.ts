@@ -68,7 +68,7 @@ program
       const results = await evalCommand(skillPath, harness, inference, {
         workspace: config.workspace,
         runs: config.runs,
-        oldSkill: opts['old-skill'] as string | undefined,
+        oldSkill: opts.oldSkill as string | undefined,
       });
 
       const terminal = new TerminalReporter();
@@ -108,7 +108,7 @@ program
       await reviewCommand(skillPath, harness, inference, {
         workspace: config.workspace,
         runs: config.runs,
-        oldSkill: opts['old-skill'] as string | undefined,
+        oldSkill: opts.oldSkill as string | undefined,
         noOpen: opts.open === false,
       });
       process.exit(0);

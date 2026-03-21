@@ -36,7 +36,6 @@ const adapter = new SDKAdapter();
 const sdkAvailable = await adapter.isAvailable();
 
 const GREETER_KEYWORDS = ['greet', 'greeting', 'formal', 'casual', 'pirate', 'greeter', 'hello'];
-const DEFAULT_ASSERTIONS = ['Output contains a greeting', 'Output mentions a name'];
 
 describe.skipIf(!sdkAvailable)('SDK E2E', () => {
   beforeAll(() => adapter.setup());
@@ -54,7 +53,8 @@ describe.skipIf(!sdkAvailable)('SDK E2E', () => {
 
   it('US2: eval with assertions produces all spec artifacts', async () => {
     const skillDir = copyGreeterSkill({ skillMdOnly: true });
-    await evalWithAssertions(adapter, skillDir, DEFAULT_ASSERTIONS);
+    writeMinimalEvals(skillDir, { withAssertions: true });
+    await evalWithAssertions(adapter, skillDir);
 
     const workspace = findWorkspaceDir(skillDir);
     assertIterationDir(workspace, 1);
@@ -111,7 +111,8 @@ describe.skipIf(!sdkAvailable)('SDK E2E', () => {
 
   it('US5: review produces feedback.json', async () => {
     const skillDir = copyGreeterSkill({ skillMdOnly: true });
-    await reviewFlow(adapter, skillDir, DEFAULT_ASSERTIONS);
+    writeMinimalEvals(skillDir, { withAssertions: true });
+    await reviewFlow(adapter, skillDir);
 
     const workspace = findWorkspaceDir(skillDir);
     assertIterationDir(workspace, 1);

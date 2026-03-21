@@ -1,15 +1,15 @@
 import type { E2ETestAdapter, E2ERunResult } from '../types.js';
-import { addAssertionsToEvals } from '../fixtures.js';
 
+/**
+ * US2: Run eval on a skill that already has evals.json with assertions.
+ * Caller must set up skillDir with evals.json (use writeMinimalEvals).
+ */
 export async function evalWithAssertions(
   adapter: E2ETestAdapter,
   skillDir: string,
-  assertions: string[],
   workspace?: string
-): Promise<{ initResult: E2ERunResult; evalResult: E2ERunResult }> {
-  const initResult = await adapter.run({ command: 'init', skillDir });
-  addAssertionsToEvals(skillDir, assertions);
+): Promise<{ evalResult: E2ERunResult }> {
   const flags = workspace ? { workspace } : undefined;
   const evalResult = await adapter.run({ command: 'eval', skillDir, flags });
-  return { initResult, evalResult };
+  return { evalResult };
 }

@@ -36,7 +36,6 @@ const adapter = new CLIAdapter();
 const copilotAvailable = await adapter.isAvailable();
 
 const GREETER_KEYWORDS = ['greet', 'greeting', 'formal', 'casual', 'pirate', 'greeter', 'hello'];
-const DEFAULT_ASSERTIONS = ['Output contains a greeting', 'Output mentions a name'];
 
 describe.skipIf(!copilotAvailable)('CLI E2E', () => {
   beforeAll(() => adapter.setup());
@@ -56,12 +55,10 @@ describe.skipIf(!copilotAvailable)('CLI E2E', () => {
 
   it('US2: eval with assertions produces all spec artifacts', async () => {
     const skillDir = copyGreeterSkill({ skillMdOnly: true });
+    writeMinimalEvals(skillDir, { withAssertions: true });
     const workspace = getWorkspaceDir(skillDir);
-    const { initResult, evalResult } = await evalWithAssertions(
-      adapter, skillDir, DEFAULT_ASSERTIONS, workspace
-    );
+    const { evalResult } = await evalWithAssertions(adapter, skillDir, workspace);
 
-    expect(initResult.exitCode).toBe(0);
     expect(evalResult.exitCode).toBe(0);
 
     assertIterationDir(workspace, 1);
@@ -124,12 +121,10 @@ describe.skipIf(!copilotAvailable)('CLI E2E', () => {
 
   it('US5: review produces feedback.json', async () => {
     const skillDir = copyGreeterSkill({ skillMdOnly: true });
+    writeMinimalEvals(skillDir, { withAssertions: true });
     const workspace = getWorkspaceDir(skillDir);
-    const { initResult, reviewResult } = await reviewFlow(
-      adapter, skillDir, DEFAULT_ASSERTIONS, workspace
-    );
+    const { reviewResult } = await reviewFlow(adapter, skillDir, workspace);
 
-    expect(initResult.exitCode).toBe(0);
     expect(reviewResult.exitCode).toBe(0);
     assertIterationDir(workspace, 1);
     assertBenchmark(`${workspace}/iteration-1`);

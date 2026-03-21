@@ -36,7 +36,6 @@ const adapter = new PluginAdapter();
 const copilotAvailable = await adapter.isAvailable();
 
 const GREETER_KEYWORDS = ['greet', 'greeting', 'formal', 'casual', 'pirate', 'greeter', 'hello'];
-const DEFAULT_ASSERTIONS = ['Output contains a greeting', 'Output mentions a name'];
 
 // Plugin tests are inherently non-deterministic — Copilot may not invoke the
 // snapeval tool as expected from NL prompts. Mark as concurrent to avoid blocking.
@@ -56,7 +55,8 @@ describe.skipIf(!copilotAvailable)('Plugin E2E', () => {
 
   it('US2: eval with assertions produces all spec artifacts', async () => {
     const skillDir = copyGreeterSkill({ skillMdOnly: true });
-    await evalWithAssertions(adapter, skillDir, DEFAULT_ASSERTIONS);
+    writeMinimalEvals(skillDir, { withAssertions: true });
+    await evalWithAssertions(adapter, skillDir);
 
     const workspace = findWorkspaceDir(skillDir);
     assertIterationDir(workspace, 1);
@@ -113,7 +113,8 @@ describe.skipIf(!copilotAvailable)('Plugin E2E', () => {
 
   it('US5: review produces feedback.json', async () => {
     const skillDir = copyGreeterSkill({ skillMdOnly: true });
-    await reviewFlow(adapter, skillDir, DEFAULT_ASSERTIONS);
+    writeMinimalEvals(skillDir, { withAssertions: true });
+    await reviewFlow(adapter, skillDir);
 
     const workspace = findWorkspaceDir(skillDir);
     assertIterationDir(workspace, 1);
