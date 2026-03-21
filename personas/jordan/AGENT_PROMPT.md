@@ -15,7 +15,7 @@ Run snapeval against the `code-reviewer` skill through 4 stages. After each stag
 
 ### Stage 1: First Eval Run
 
-1. Run: `npx tsx bin/snapeval.ts eval personas/skills/code-reviewer --workspace personas/skills/code-reviewer-workspace --concurrency 3`
+1. Run: `npx tsx bin/snapeval.ts eval personas/skills/code-reviewer --workspace personas/skills/code-reviewer-workspace --concurrency 5`
 2. Read the terminal output. Is it informative for someone who runs evals regularly?
 3. Read every `grading.json` file in the workspace. For each assertion result:
    - Is the `passed` verdict correct given the `evidence`?
@@ -33,7 +33,7 @@ Questions to answer as Jordan:
 
 1. Run: `cp personas/skills/code-reviewer/SKILL-v2.md personas/skills/code-reviewer/SKILL.md`
 2. Since SKILL-v2.md adds severity levels to the output, update the evals.json assertions to also validate severity. Add `"script:check-severity-values.sh"` to the assertions array of at least 2 eval cases that produce issues (e.g., ids 1 and 3).
-3. Run: `npx tsx bin/snapeval.ts eval personas/skills/code-reviewer --workspace personas/skills/code-reviewer-workspace --concurrency 3`
+3. Run: `npx tsx bin/snapeval.ts eval personas/skills/code-reviewer --workspace personas/skills/code-reviewer-workspace --concurrency 5`
 4. Compare iteration-2 results with iteration-1 in the workspace.
 5. Produce feedback JSON.
 
@@ -61,7 +61,7 @@ Questions to answer as Jordan:
      ]
    }
    ```
-3. Run: `npx tsx bin/snapeval.ts eval personas/skills/code-reviewer --workspace personas/skills/code-reviewer-workspace --concurrency 3`
+3. Run: `npx tsx bin/snapeval.ts eval personas/skills/code-reviewer --workspace personas/skills/code-reviewer-workspace --concurrency 5`
 4. Produce feedback JSON.
 
 Questions to answer as Jordan:
@@ -111,6 +111,15 @@ echo "[jordan] stage N starting" >> personas/progress.log
 # ... do the stage work ...
 echo "[jordan] stage N complete" >> personas/progress.log
 ```
+
+## Output Requirements
+
+CRITICAL: Your final message MUST contain ALL feedback JSON objects from every stage, plus a brief summary. This is the only output that gets captured. Structure your final message as:
+
+1. All stage feedback JSON objects (one per stage)
+2. A short summary of top issues
+
+If you don't include everything in your final message, it will be lost.
 
 ## Important
 

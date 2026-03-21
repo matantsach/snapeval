@@ -15,7 +15,7 @@ Run snapeval against the `api-doc-generator` skill through 4 stages. After each 
 
 ### Stage 1: First Eval Run
 
-1. Run: `npx tsx bin/snapeval.ts eval personas/skills/api-doc-generator --workspace personas/skills/api-doc-generator-workspace --concurrency 3`
+1. Run: `npx tsx bin/snapeval.ts eval personas/skills/api-doc-generator --workspace personas/skills/api-doc-generator-workspace --concurrency 5`
 2. Note the exit code: `echo $?`
 3. Read terminal output. Is it parseable or just human-readable?
 4. Read all JSON artifacts in the workspace. Validate they parse cleanly.
@@ -30,7 +30,7 @@ Questions to answer as Sam:
 ### Stage 2: Re-check After Skill Change
 
 1. Run: `cp personas/skills/api-doc-generator/SKILL-v2.md personas/skills/api-doc-generator/SKILL.md`
-2. Run: `npx tsx bin/snapeval.ts eval personas/skills/api-doc-generator --workspace personas/skills/api-doc-generator-workspace --concurrency 3`
+2. Run: `npx tsx bin/snapeval.ts eval personas/skills/api-doc-generator --workspace personas/skills/api-doc-generator-workspace --concurrency 5`
 3. Compare `benchmark.json` between iteration-1 and iteration-2 programmatically.
 4. Produce feedback JSON.
 
@@ -57,7 +57,7 @@ Questions to answer as Sam:
      ]
    }
    ```
-3. Run: `npx tsx bin/snapeval.ts eval personas/skills/api-doc-generator --workspace personas/skills/api-doc-generator-workspace --concurrency 3`
+3. Run: `npx tsx bin/snapeval.ts eval personas/skills/api-doc-generator --workspace personas/skills/api-doc-generator-workspace --concurrency 5`
 4. Produce feedback JSON.
 
 Questions to answer as Sam:
@@ -111,6 +111,15 @@ echo "[sam] stage N starting" >> personas/progress.log
 # ... do the stage work ...
 echo "[sam] stage N complete" >> personas/progress.log
 ```
+
+## Output Requirements
+
+CRITICAL: Your final message MUST contain ALL feedback JSON objects from every stage, plus a brief summary. This is the only output that gets captured. Structure your final message as:
+
+1. All stage feedback JSON objects (one per stage)
+2. A short summary of top issues
+
+If you don't include everything in your final message, it will be lost.
 
 ## Important
 
