@@ -77,6 +77,21 @@ Example evals.json entry with script assertion:
 - Mix of LLM assertions and `script:` assertions (validate markdown headers, check endpoint coverage)
 - SKILL-v2.md adds: example request/response blocks in generated docs
 
+Example evals.json entry with script assertion:
+```json
+{
+  "id": 1,
+  "prompt": "Generate API docs for this OpenAPI spec:\n{\"openapi\":\"3.0.0\",\"paths\":{\"/users\":{\"get\":{\"summary\":\"List users\"}}}}",
+  "expected_output": "Markdown documentation with a heading for /users GET endpoint",
+  "files": [],
+  "assertions": [
+    "Output contains a markdown heading for the /users endpoint",
+    "Output includes the 'List users' summary text",
+    "script:validate-markdown-headers.sh"
+  ]
+}
+```
+
 ### evals.json Format Reference
 
 All evals.json files must conform to the `EvalsFile` schema from `src/types.ts`:
@@ -99,9 +114,12 @@ All evals.json files must conform to the `EvalsFile` schema from `src/types.ts`:
 }
 ```
 
+**Field notes:**
+- `expected_output` (required): Human-readable description of what correct output looks like. Not used by the grader — assertions are the actual test. This field exists for human readability when reviewing evals.json and appears in the review report. Write it as a brief description, not a literal expected string. See `test-skills/greeter/evals/evals.json` for examples.
+
 **Assertion conventions:**
 - **LLM assertions:** Plain English strings. Must be concrete and verifiable — "Output contains a YAML block with an 'id' field" not "Output is correct."
-- **Script assertions:** Prefixed with `script:`. The filename is relative to `<skill-dir>/evals/scripts/`. The script receives the output directory as its first argument and passes on exit code 0.
+- **Script assertions:** Prefixed with `script:`. The filename is relative to `<skill-dir>/evals/scripts/`. The script receives the output directory as its first argument and passes on exit code 0. Scripts must be executable (`chmod +x`). If not executable, the grader reports `passed: false` with a misleading "non-zero exit code" message — there is no setup-time diagnostic.
 
 ### Part B: Persona Agents
 
@@ -150,28 +168,28 @@ Each persona has two files: PROFILE.md (who they are) and AGENT_PROMPT.md (execu
 
 Each persona executes 3 stages against their assigned skill. The skill and evals are pre-built — personas focus on the snapeval experience.
 
-All commands run from the repo root. All stages use the explicit skill path.
+All commands run from the repo root using `npx tsx bin/snapeval.ts` (dev invocation — the package is not globally installed). All stages use the explicit skill path.
 
 **Stage 1 — First Eval Run**
-- Run `npx snapeval eval personas/skills/<skill>` on the pre-built skill
+- Run `npx tsx bin/snapeval.ts eval personas/skills/<skill>` on the pre-built skill
 - Examine all output artifacts (grading.json, benchmark.json, terminal output)
 - Report on: Was the output clear? Did they understand what happened? Any errors?
 
 **Stage 2 — Re-check After Skill Change**
 - Copy SKILL-v2.md over SKILL.md (`cp personas/skills/<skill>/SKILL-v2.md personas/skills/<skill>/SKILL.md`)
-- Re-run `npx snapeval eval personas/skills/<skill>`
+- Re-run `npx tsx bin/snapeval.ts eval personas/skills/<skill>`
 - Compare new pass rate against Stage 1 results
 - Report on: Was the change in results clear? Is grading evidence trustworthy? Any false positives/negatives?
 - Note: SKILL.md is overwritten. Re-running Stage 1 requires restoring the original via `git checkout`.
 
 **Stage 3 — Add New Evals**
 - Edit evals.json in place — append a new eval case relevant to their skill domain
-- Re-run `npx snapeval eval personas/skills/<skill>`
+- Re-run `npx tsx bin/snapeval.ts eval personas/skills/<skill>`
 - Report on: Was extending evals smooth? Did the new case integrate cleanly? Any issues?
 
 **Persona-specific bonus stages:**
-- Jordan (Stage 4): Dig into benchmark.json numbers, question stddev, run with `--runs 3`. Note: current `--runs` implementation only retains the last run's grading per eval case — stddev in benchmark.json comes from variance across eval cases, not repeated measurements. This is a known gap Jordan may surface.
-- Sam (Stage 4): Parse artifacts programmatically, test exit codes on failure, validate headless operation
+- Jordan (Stage 4): Dig into benchmark.json numbers, question stddev, run with `--runs 3`. Note: current `--runs` implementation only retains the last run's grading per eval case — stddev in benchmark.json comes from variance across eval cases, not repeated measurements. This is a known gap that Jordan should surface as `category: "missing_feature"`, `severity: "slows_down"`.
+- Sam (Stage 4): Parse artifacts programmatically, test exit codes on failure, validate headless operation. Output artifacts land in a workspace directory (default: `<skill-name>-workspace/` relative to CWD). The workspace contains `iteration-N/eval-{slug}/{with_skill,without_skill}/` subdirectories. The `eval` command prints the iteration directory path to stdout. Sam should discover and parse artifacts from this path.
 
 ### Feedback Format
 
@@ -245,8 +263,10 @@ personas/
 
 ## Environment Prerequisites
 
+- **CLI invocation:** Use `npx tsx bin/snapeval.ts` (dev mode) from the repo root. The package is not globally installed.
 - **Harness:** `copilot-cli` (default). Copilot CLI must be installed and authenticated (`npm install -g @github/copilot`). Alternatively, pass `--harness <other>` if another harness is available.
 - **Inference:** `auto` (default). Resolves to Copilot CLI or GitHub Models API via `GITHUB_TOKEN`. No additional config needed if Copilot CLI is installed.
+- **Script permissions:** All files in `evals/scripts/` must be executable (`chmod +x`). The implementation must set this during file creation.
 - No `snapeval.config.json` is needed in the persona skill directories — CLI defaults are sufficient for the dogfooding workflow.
 
 ## Non-Goals
