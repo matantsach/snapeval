@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.3.0](https://github.com/matantsach/snapeval/compare/snapeval-v2.2.0...snapeval-v2.3.0) (2026-03-22)
+
+
+### Features
+
+* make copilot-sdk a required dependency ([#50](https://github.com/matantsach/snapeval/issues/50)) ([b87fd09](https://github.com/matantsach/snapeval/commit/b87fd09f99e918becba45921b878d70e0deb1b29))
+
 ## [2.2.0](https://github.com/matantsach/snapeval/compare/snapeval-v2.1.2...snapeval-v2.2.0) (2026-03-22)
 
 
