@@ -5,6 +5,7 @@
   "author": {
     "name": "Matan Tsach"
   },
+  "license": "MIT",
   "skills": [
     "skills/create-evals",
     "skills/run-evals"

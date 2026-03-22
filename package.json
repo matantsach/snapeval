@@ -10,7 +10,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:e2e": "vitest run --config vitest.e2e.config.ts",
-    "build": "tsc",
+    "build": "rm -rf dist && tsc && cp package.json dist/",
     "dev": "tsx bin/snapeval.ts",
     "prepublishOnly": "npm run build && npm test"
   },
@@ -19,7 +19,6 @@
     "agentskills",
     "evaluation",
     "harness",
-    "copilot-cli"
   ],
   "author": "Matan Tsach",
   "license": "MIT",
@@ -39,8 +38,7 @@
     "plugin.json",
     "skills/create-evals/SKILL.md",
     "skills/run-evals/SKILL.md",
-    "scripts/",
-    "assets/"
+    "scripts/"
   ],
   "dependencies": {
     "@github/copilot-sdk": "^0.2.0",
