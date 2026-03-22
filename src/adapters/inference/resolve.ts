@@ -1,19 +1,7 @@
-import { execFileSync } from 'node:child_process';
 import type { InferenceAdapter } from '../../types.js';
 import { AdapterNotAvailableError } from '../../errors.js';
 import { GitHubModelsInference } from './github-models.js';
-import { CopilotInference } from './copilot.js';
 import { CopilotSDKInference } from './copilot-sdk.js';
-import { isSDKInstalled } from '../copilot-sdk-client.js';
-
-function isCopilotAvailable(): boolean {
-  try {
-    execFileSync('copilot', ['--version'], { encoding: 'utf-8', stdio: 'pipe' });
-    return true;
-  } catch {
-    return false;
-  }
-}
 
 function isGitHubTokenAvailable(): boolean {
   return Boolean(process.env.GITHUB_TOKEN);
@@ -21,31 +9,18 @@ function isGitHubTokenAvailable(): boolean {
 
 export function resolveInference(preference: string): InferenceAdapter {
   if (preference === 'auto') {
-    const copilotAvailable = isCopilotAvailable();
-    const tokenAvailable = isGitHubTokenAvailable();
-
-    if (copilotAvailable) {
-      return new CopilotInference();
-    }
-
-    if (tokenAvailable) {
-      return new GitHubModelsInference();
-    }
-
-    throw new AdapterNotAvailableError(
-      'inference',
-      'No inference adapter available. Install GitHub Copilot CLI (`npm install -g @github/copilot`) or set GITHUB_TOKEN.'
-    );
+    return new CopilotSDKInference();
   }
 
   if (preference === 'copilot') {
-    if (!isCopilotAvailable()) {
-      throw new AdapterNotAvailableError(
-        'copilot',
-        'GitHub Copilot CLI is not available. Install with: npm install -g @github/copilot'
-      );
-    }
-    return new CopilotInference();
+    throw new AdapterNotAvailableError(
+      'copilot',
+      'The copilot CLI inference adapter has been removed. Use --inference copilot-sdk instead.'
+    );
+  }
+
+  if (preference === 'copilot-sdk') {
+    return new CopilotSDKInference();
   }
 
   if (preference === 'github-models') {
@@ -58,18 +33,8 @@ export function resolveInference(preference: string): InferenceAdapter {
     return new GitHubModelsInference();
   }
 
-  if (preference === 'copilot-sdk') {
-    if (!isSDKInstalled()) {
-      throw new AdapterNotAvailableError(
-        'copilot-sdk',
-        '@github/copilot-sdk is not installed. Install with: npm install @github/copilot-sdk'
-      );
-    }
-    return new CopilotSDKInference();
-  }
-
   throw new AdapterNotAvailableError(
     preference,
-    `Unknown inference adapter "${preference}". Valid options: auto, copilot, copilot-sdk, github-models.`
+    `Unknown inference adapter "${preference}". Valid options: auto, copilot-sdk, github-models.`
   );
 }
