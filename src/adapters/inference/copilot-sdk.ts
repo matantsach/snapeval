@@ -7,7 +7,6 @@ export class CopilotSDKInference implements InferenceAdapter {
   async chat(messages: Message[], _options?: ChatOptions): Promise<string> {
     const client = await getClient();
 
-    // @ts-ignore — module may not be installed (optional dep)
     const { approveAll } = await import('@github/copilot-sdk');
 
     const systemMessages = messages.filter((m) => m.role === 'system');

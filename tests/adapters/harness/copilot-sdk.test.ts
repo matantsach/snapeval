@@ -2,10 +2,8 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 // Mock the SDK client
 const mockGetClient = vi.fn();
-const mockIsSDKInstalled = vi.fn();
 vi.mock('../../../src/adapters/copilot-sdk-client.js', () => ({
   getClient: (...args: any[]) => mockGetClient(...args),
-  isSDKInstalled: (...args: any[]) => mockIsSDKInstalled(...args),
 }));
 
 // Mock the SDK module
@@ -191,11 +189,7 @@ describe('CopilotSDKHarness', () => {
     expect(result.duration_ms).toBeGreaterThanOrEqual(0);
   });
 
-  it('isAvailable delegates to isSDKInstalled', async () => {
-    mockIsSDKInstalled.mockReturnValue(true);
+  it('isAvailable always returns true', async () => {
     expect(await harness.isAvailable()).toBe(true);
-
-    mockIsSDKInstalled.mockReturnValue(false);
-    expect(await harness.isAvailable()).toBe(false);
   });
 });

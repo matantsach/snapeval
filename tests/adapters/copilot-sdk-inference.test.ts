@@ -10,7 +10,6 @@ vi.mock('../../src/adapters/copilot-sdk-client.js', () => ({
     createSession: mockCreateSession,
   }),
   stopClient: vi.fn(),
-  isSDKInstalled: vi.fn().mockReturnValue(true),
 }));
 
 const { CopilotSDKInference } = await import('../../src/adapters/inference/copilot-sdk.js');

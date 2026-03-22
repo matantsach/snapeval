@@ -1,7 +1,7 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import type { Harness, HarnessRunResult } from '../../types.js';
-import { getClient, isSDKInstalled } from '../copilot-sdk-client.js';
+import { getClient } from '../copilot-sdk-client.js';
 
 export class CopilotSDKHarness implements Harness {
   readonly name = 'copilot-sdk';
@@ -18,7 +18,6 @@ export class CopilotSDKHarness implements Harness {
     fs.mkdirSync(options.outputDir, { recursive: true });
 
     // Dynamically import SDK for approveAll
-    // @ts-ignore — module may not be installed (optional dep)
     const { approveAll } = await import('@github/copilot-sdk');
 
     // Build session config
@@ -80,7 +79,7 @@ export class CopilotSDKHarness implements Harness {
   }
 
   async isAvailable(): Promise<boolean> {
-    return isSDKInstalled();
+    return true;
   }
 }
 

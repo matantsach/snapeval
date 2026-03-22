@@ -1,17 +1,10 @@
 import type { Harness } from '../../types.js';
 import { CopilotCLIHarness } from './copilot-cli.js';
 import { CopilotSDKHarness } from './copilot-sdk.js';
-import { AdapterNotAvailableError, SnapevalError } from '../../errors.js';
-import { isSDKInstalled } from '../copilot-sdk-client.js';
+import { SnapevalError } from '../../errors.js';
 
 export function resolveHarness(name: string): Harness {
   if (name === 'copilot-sdk') {
-    if (!isSDKInstalled()) {
-      throw new AdapterNotAvailableError(
-        'copilot-sdk',
-        '@github/copilot-sdk is not installed. Install with: npm install @github/copilot-sdk'
-      );
-    }
     return new CopilotSDKHarness();
   }
   if (name === 'copilot-cli') {
