@@ -45,10 +45,10 @@ ${output}
 ASSERTIONS TO GRADE:
 ${assertions.map((a, i) => `${i + 1}. ${a}`).join('\n')}
 
-Respond with JSON only:
+Respond with valid JSON only. IMPORTANT: Escape any double quotes inside string values with a backslash (\\"). Do not use unescaped double quotes inside evidence text.
 {
   "results": [
-    {"text": "<assertion text>", "passed": true/false, "evidence": "<quote from output supporting your verdict>"}
+    {"text": "<assertion text>", "passed": true/false, "evidence": "<quote from output — escape any double quotes>"}
   ]
 }`;
 }
@@ -109,7 +109,17 @@ function extractJSON(text: string): string {
   return trimmed;
 }
 
-const MAX_GRADING_RETRIES = 2;
+function parseGraderResponse(response: string): AssertionResult[] {
+  const jsonText = extractJSON(response);
+  const parsed = JSON.parse(jsonText);
+  const items = Array.isArray(parsed) ? parsed : parsed.results;
+  if (!Array.isArray(items)) throw new Error('No results array in grader response');
+  return items.map((r: any) => ({
+    text: r.text ?? '',
+    passed: Boolean(r.passed),
+    evidence: r.evidence ?? '',
+  }));
+}
 
 async function gradeLLMAssertions(
   prompt: string,
@@ -117,38 +127,44 @@ async function gradeLLMAssertions(
   runDir: string,
   inference: InferenceAdapter,
 ): Promise<AssertionResult[]> {
-  for (let attempt = 0; attempt <= MAX_GRADING_RETRIES; attempt++) {
-    const response = await inference.chat(
-      [{ role: 'user', content: prompt }],
-      { temperature: 0, responseFormat: 'json' }
-    );
-    const jsonText = extractJSON(response);
+  // Step 1: Grade assertions
+  const response = await inference.chat(
+    [{ role: 'user', content: prompt }],
+    { temperature: 0, responseFormat: 'json' }
+  );
+
+  try {
+    return parseGraderResponse(response);
+  } catch (firstErr) {
+    // Step 2: Validation loop — send malformed JSON back to LLM to fix
+    const debugPath = path.join(runDir, 'grader-debug.txt');
+    fs.writeFileSync(debugPath, `--- original response ---\n${response}\n--- parse error ---\n${firstErr}\n`);
+
+    const fixPrompt = `The following JSON is malformed. Fix it so it is valid JSON. Return ONLY the corrected JSON, nothing else.
+
+Error: ${firstErr}
+
+Malformed JSON:
+${extractJSON(response)}`;
+
     try {
-      const parsed = JSON.parse(jsonText);
-      const items = Array.isArray(parsed) ? parsed : parsed.results;
-      if (!Array.isArray(items)) throw new Error('No results array in grader response');
-      return items.map((r: any) => ({
-        text: r.text ?? '',
-        passed: Boolean(r.passed),
-        evidence: r.evidence ?? '',
-      }));
-    } catch (err) {
-      // Write debug info on every failed attempt
-      const debugPath = path.join(runDir, `grader-debug-attempt-${attempt}.txt`);
-      fs.writeFileSync(debugPath, `--- raw response ---\n${response}\n--- extracted ---\n${jsonText}\n--- error ---\n${err}\n`);
-
-      if (attempt < MAX_GRADING_RETRIES) continue;
-
-      // All retries exhausted — fail gracefully instead of crashing the run
+      const fixedResponse = await inference.chat(
+        [{ role: 'user', content: fixPrompt }],
+        { temperature: 0, responseFormat: 'json' }
+      );
+      const results = parseGraderResponse(fixedResponse);
+      fs.appendFileSync(debugPath, `\n--- fix succeeded ---\n${extractJSON(fixedResponse)}\n`);
+      return results;
+    } catch (fixErr) {
+      // Step 3: Both attempts failed — fail gracefully
+      fs.appendFileSync(debugPath, `\n--- fix also failed ---\n${fixErr}\n`);
       return assertions.map((text) => ({
         text,
         passed: false,
-        evidence: `Grading failed: LLM returned malformed JSON after ${MAX_GRADING_RETRIES + 1} attempts. See ${debugPath} for details.`,
+        evidence: `Grading failed: LLM returned malformed JSON that could not be repaired. See ${debugPath}`,
       }));
     }
   }
-  // Unreachable but TypeScript needs it
-  return [];
 }
 
 export async function gradeAssertions(
