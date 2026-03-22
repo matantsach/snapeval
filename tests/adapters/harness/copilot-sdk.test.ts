@@ -52,7 +52,7 @@ describe('CopilotSDKHarness', () => {
     });
 
     const sessionConfig = mockClient.createSession.mock.calls[0][0];
-    expect(sessionConfig.skillDirectories).toEqual(['/path/to/skill']);
+    expect(sessionConfig.skillDirectories).toEqual(['/path/to']);
     expect(sessionConfig.workingDirectory).toBe('/tmp/out');
     expect(sessionConfig.infiniteSessions).toEqual({ enabled: false });
   });
@@ -102,7 +102,7 @@ describe('CopilotSDKHarness', () => {
     const events = [
       { type: 'user.message', data: { content: 'hello' } },
       { type: 'tool.execution_start', data: { toolName: 'read_file', arguments: { path: 'foo.ts' } } },
-      { type: 'tool.execution_complete', data: { toolName: 'read_file', result: 'file content' } },
+      { type: 'tool.execution_complete', data: { toolName: 'read_file', result: { content: 'file content' } } },
       { type: 'skill.invoked', data: { name: 'my-skill', path: '/skill/SKILL.md' } },
       { type: 'assistant.message', data: { content: 'done' } },
     ];
@@ -167,7 +167,7 @@ describe('CopilotSDKHarness', () => {
     expect(session.disconnect).toHaveBeenCalled();
   });
 
-  it('extracts token count from assistant.usage events', async () => {
+  it('returns zero total_tokens (SDK usage events are ephemeral)', async () => {
     const events = [
       { type: 'assistant.usage', data: { inputTokens: 1000, outputTokens: 200 } },
       { type: 'assistant.usage', data: { inputTokens: 500, outputTokens: 100 } },
@@ -178,7 +178,7 @@ describe('CopilotSDKHarness', () => {
 
     const result = await harness.run({ prompt: 'test', outputDir: '/tmp/out' });
 
-    expect(result.total_tokens).toBe(1800);
+    expect(result.total_tokens).toBe(0);
   });
 
   it('measures duration_ms', async () => {

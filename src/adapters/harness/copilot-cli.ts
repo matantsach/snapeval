@@ -44,6 +44,7 @@ export class CopilotCLIHarness implements Harness {
         (error, stdout, _stderr) => {
           if (error) { reject(error); return; }
           const durationMs = Date.now() - startMs;
+          // CLI harness cannot extract token usage from stdout
           resolve({ raw: stdout.trim(), files: [], total_tokens: 0, duration_ms: durationMs });
         }
       );
