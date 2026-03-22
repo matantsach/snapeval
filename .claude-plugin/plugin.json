@@ -1,7 +1,7 @@
 {
   "name": "snapeval",
   "version": "2.1.2",
-  "description": "Semantic snapshot testing for AI skills. Zero assertions. AI-driven. Free inference.",
+  "description": "Eval runner for AI skills. Design test scenarios, run with/without skill comparisons, grade assertions, iterate on quality.",
   "author": {
     "name": "Matan Tsach"
   },
