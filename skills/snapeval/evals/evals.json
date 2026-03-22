@@ -3,61 +3,72 @@
   "evals": [
     {
       "id": 1,
-      "prompt": "Evaluate my `skills/code-reviewer` skill.",
-      "expected_output": "The assistant reads the skill's SKILL.md, analyzes it, and presents 5-8 realistic test scenarios. Then asks whether to adjust or run them.",
-      "slug": "evaluate-skill",
+      "label": "run evals when evals exist",
+      "slug": "run-existing-evals",
+      "prompt": "Run evals for `skills/code-reviewer`.",
+      "expected_output": "The assistant detects existing evals.json and runs `npx snapeval eval` without going through any interactive setup phases.",
       "assertions": [
-        "The response references the provided skill path.",
-        "The response presents a numbered list of test scenarios.",
-        "The response includes between 5 and 8 scenarios.",
-        "The response asks whether to adjust the scenarios or run them.",
-        "The response does not ask the user to manually create evals.json."
-      ]
+        "The response runs or references running `npx snapeval eval`.",
+        "The response does not go through an interactive setup or scenario design flow.",
+        "The response interprets benchmark results or pass rates in plain language.",
+        "The response mentions the delta between with-skill and without-skill."
+      ],
+      "files": []
     },
     {
       "id": 2,
-      "prompt": "Can you test a skill for me?",
-      "expected_output": "The assistant asks which skill to evaluate since no path was provided. Does not generate scenarios yet.",
-      "slug": "no-path-provided",
+      "label": "re-eval after skill changes",
+      "slug": "re-eval-after-changes",
+      "prompt": "I just updated my SKILL.md for `skills/release-notes`. Run evals again and tell me if it improved.",
+      "expected_output": "The assistant runs evals, compares with previous iteration, and reports which evals improved or regressed.",
       "assertions": [
-        "The response asks which skill the user wants to evaluate.",
-        "The response does not invent a target skill.",
-        "The response does not run commands before a skill path is provided."
-      ]
+        "The response runs `npx snapeval eval` to create a new iteration.",
+        "The response compares the new iteration with the previous one.",
+        "The response shows per-eval changes or a net delta.",
+        "The response gives a clear verdict on whether the changes improved or regressed."
+      ],
+      "files": []
     },
     {
       "id": 3,
-      "prompt": "Test `skills/commit-message` and focus on edge cases too.",
-      "expected_output": "The assistant generates scenarios including happy paths, edge cases, and negative tests, then asks for confirmation.",
-      "slug": "edge-case-focus",
+      "label": "hand off when no evals exist",
+      "slug": "no-evals-handoff",
+      "prompt": "Evaluate `skills/new-skill` — it has no evals yet.",
+      "expected_output": "The assistant detects no evals.json and hands off to snapeval-setup.",
       "assertions": [
-        "The response contains at least one happy-path scenario.",
-        "The response contains at least one edge-case scenario.",
-        "The response contains at least one negative test scenario.",
-        "The response asks for confirmation before running commands."
-      ]
+        "The response indicates no evals exist for this skill.",
+        "The response offers to help set up evals or mentions the setup flow.",
+        "The response does not attempt to run `npx snapeval eval` when no evals.json exists."
+      ],
+      "files": []
     },
     {
       "id": 4,
-      "prompt": "How is my `skills/release-notes` skill doing?",
-      "expected_output": "The assistant runs an eval, shows the with-skill vs without-skill benchmark delta, and interprets the results.",
-      "slug": "review-results",
+      "label": "add a new eval case",
+      "slug": "add-eval-case",
+      "prompt": "Add an eval for empty input to my `skills/greeter` skill.",
+      "expected_output": "The assistant reads the existing evals.json, adds a new eval with the next available ID, preserves existing evals, and runs just the new one.",
       "assertions": [
-        "The response mentions running snapeval eval or review.",
-        "The response interprets pass rates or benchmark results in plain language.",
-        "The response mentions the delta between with-skill and without-skill."
-      ]
+        "The response reads the existing evals/evals.json first.",
+        "The response adds a new eval with the next available ID.",
+        "The response preserves all existing evals without renumbering.",
+        "The response uses --only to run just the new eval."
+      ],
+      "files": []
     },
     {
       "id": 5,
-      "prompt": "Evaluate `skills/does-not-exist`.",
-      "expected_output": "The assistant handles the missing skill gracefully by reporting that SKILL.md could not be found.",
-      "slug": "missing-skill",
+      "label": "review results with patterns",
+      "slug": "review-results",
+      "prompt": "How is my `skills/release-notes` skill doing?",
+      "expected_output": "The assistant runs review, interprets pass rates, surfaces patterns like always-pass/always-fail assertions, and suggests improvements.",
       "assertions": [
-        "The response indicates the skill path or SKILL.md could not be found.",
-        "The response does not fabricate results.",
-        "The response suggests a corrective next step."
-      ]
+        "The response runs or references `npx snapeval eval` or `npx snapeval review`.",
+        "The response interprets results in plain language.",
+        "The response surfaces patterns such as always-pass, always-fail, or differentiating assertions.",
+        "The response suggests concrete improvements based on what failed."
+      ],
+      "files": []
     }
   ]
 }

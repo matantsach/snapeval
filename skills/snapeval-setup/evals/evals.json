@@ -1,0 +1,74 @@
+{
+  "skill_name": "snapeval-setup",
+  "evals": [
+    {
+      "id": 1,
+      "label": "first-time eval setup with skill path",
+      "slug": "first-time-setup",
+      "prompt": "Evaluate my `skills/code-reviewer` skill.",
+      "expected_output": "The assistant reads the skill's SKILL.md, performs deep analysis (core behaviors, input dimensions, weak spots), presents findings, asks targeted questions, then proposes 5-8 test scenarios.",
+      "assertions": [
+        "The response reads or references the provided skill's SKILL.md file.",
+        "The response includes a skill analysis with core behaviors, input dimensions, and potential weak spots or gaps.",
+        "The analysis is presented BEFORE any questions are asked to the user.",
+        "The response asks 1-3 specific, informed questions about gaps found in the analysis.",
+        "The response does not ask the user to manually create evals.json or any config files."
+      ],
+      "files": []
+    },
+    {
+      "id": 2,
+      "label": "no skill path provided",
+      "slug": "no-path-provided",
+      "prompt": "Can you test a skill for me?",
+      "expected_output": "The assistant asks which skill to evaluate since no path was provided. Does not generate scenarios or run commands.",
+      "assertions": [
+        "The response asks which skill the user wants to evaluate.",
+        "The response does not invent or assume a target skill path.",
+        "The response does not run any eval commands before a skill path is provided."
+      ],
+      "files": []
+    },
+    {
+      "id": 3,
+      "label": "edge case focus request",
+      "slug": "edge-case-focus",
+      "prompt": "Test `skills/commit-message` and focus on edge cases too.",
+      "expected_output": "The assistant performs deep analysis, asks informed questions, and generates scenarios including happy paths, edge cases, and negative tests.",
+      "assertions": [
+        "The response includes a deep skill analysis before asking any questions.",
+        "The proposed scenarios include at least one happy-path scenario.",
+        "The proposed scenarios include at least one edge-case scenario.",
+        "The proposed scenarios include at least one negative test scenario.",
+        "The response asks for confirmation before writing evals.json or running commands."
+      ],
+      "files": []
+    },
+    {
+      "id": 4,
+      "label": "hand off when evals already exist",
+      "slug": "evals-already-exist",
+      "prompt": "Evaluate `skills/greeter` skill.",
+      "expected_output": "If evals/evals.json already exists, the assistant should detect this and hand off to the snapeval skill for running existing evals rather than recreating them.",
+      "assertions": [
+        "The response checks for existing evals/evals.json before starting the setup flow.",
+        "If evals exist, the response mentions running existing evals rather than creating new ones.",
+        "The response does not regenerate scenarios when evals.json already exists."
+      ],
+      "files": []
+    },
+    {
+      "id": 5,
+      "label": "missing skill path",
+      "slug": "missing-skill",
+      "prompt": "Evaluate `skills/does-not-exist`.",
+      "expected_output": "The assistant handles the missing skill gracefully by reporting that SKILL.md could not be found.",
+      "assertions": [
+        "The response indicates the skill path or SKILL.md could not be found.",
+        "The response does not fabricate results or scenarios.",
+        "The response suggests a corrective next step."
+      ],
+      "files": []
+    }
+  ]
+}

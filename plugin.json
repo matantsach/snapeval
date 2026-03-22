@@ -5,6 +5,7 @@
   "author": "Matan Tsach",
   "license": "MIT",
   "skills": [
+    "skills/snapeval-setup",
     "skills/snapeval"
   ],
   "scripts": [
