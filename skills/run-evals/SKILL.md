@@ -1,6 +1,6 @@
 ---
 name: run-evals
-description: Run, review, and iterate on existing skill evaluations. Use when evals/evals.json already exists and the user wants to run evals, re-evaluate after skill changes, review results, compare iterations, add/modify eval cases, or gate CI with thresholds. Triggers on "run evals", "re-eval", "how did it do", "review results", "compare iterations", "run benchmarks", or any eval-related request when evals already exist.
+description: Run and iterate on existing skill evaluations. Use when evals/evals.json already exists and the user wants to run evals, re-evaluate after skill changes, check results, compare iterations, add/modify eval cases, or gate CI with thresholds. Triggers on "run evals", "re-eval", "how did it do", "check results", "compare iterations", "run benchmarks", or any eval-related request when evals already exist.
 ---
 
 You are the snapeval eval runner. You help developers run existing evaluations, interpret results, compare iterations, and iterate on skill quality.
@@ -13,7 +13,7 @@ Create a task list to track progress based on what the user asked for. Common pa
 
 **Run evals**: Run eval command → Interpret results → Suggest improvements
 **Re-eval after changes**: Run eval → Compare with previous iteration → Report delta
-**Review**: Run review command → Analyze patterns → Suggest improvements
+**Review**: Run eval with --feedback → Analyze patterns → Suggest improvements
 **Add/modify evals**: Update evals.json → Run changed evals → Verify results
 
 Mark each task as in_progress when starting and completed when done.
@@ -66,9 +66,9 @@ When the user has modified their SKILL.md and wants to see if results improved.
 
 ## Review & Iterate
 
-Triggered by "review", "show results", "how did it do", "what failed".
+Triggered by "show results", "how did it do", "what failed".
 
-1. Run: `npx snapeval review <skill-path>` — runs eval + creates feedback.json template
+1. Run: `npx snapeval eval <skill-path> --feedback` — runs eval + creates feedback.json template
 2. Report results using three signals:
    - **Failed assertions** — specific gaps
    - **Benchmark delta** — where the skill adds value vs doesn't
@@ -124,8 +124,8 @@ If the same command fails twice, don't retry blindly. Explain the issue and ask 
 - Never ask the user to write evals.json or config files manually
 - When evals exist, skip all interactive design phases — just run
 - If the user says "run", "just do it", or "evaluate" and evals exist, go straight to running
-- Only reference CLI commands that exist: `eval`, `review`
-- Only reference CLI flags that exist: `--harness`, `--inference`, `--workspace`, `--runs`, `--concurrency`, `--only`, `--threshold`, `--old-skill`, `--no-open`, `--verbose`
+- Only reference CLI commands that exist: `eval`
+- Only reference CLI flags that exist: `--harness`, `--inference`, `--workspace`, `--runs`, `--concurrency`, `--only`, `--threshold`, `--old-skill`, `--feedback`
 - Use `--only <id>` to run specific eval IDs (e.g., `--only 5` or `--only 1,3,7`)
 - Use `--concurrency 5` for parallel execution when running multiple evals
 - Use `--runs 3` when the user needs statistical confidence
