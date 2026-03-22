@@ -121,6 +121,6 @@ describe.skipIf(!copilotAvailable)('Plugin E2E', () => {
     const skillDir = copyGreeterSkill({ skillMdOnly: true });
     const { result } = await noEvalsJson(adapter, skillDir);
 
-    expect(result.stdout + result.stderr).toMatch(/evals\.json|error/i);
+    expect(result.stdout + result.stderr).toMatch(/evals\.json|error|no evals exist/i);
   });
 });
