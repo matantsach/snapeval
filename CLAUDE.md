@@ -84,8 +84,8 @@ Pick the prefix that matches the change semantics. Removing a CLI command is `fe
 
 Before creating a PR, verify ALL consumers of changed/removed features are updated. Grep broadly — not just code imports:
 
-- [ ] `skills/snapeval-setup/SKILL.md` — onboarding skill references correct commands, flags, and workflows
-- [ ] `skills/snapeval/SKILL.md` — eval runner skill references correct commands, flags, and workflows
+- [ ] `skills/create-evals/SKILL.md` — onboarding skill references correct commands, flags, and workflows
+- [ ] `skills/run-evals/SKILL.md` — eval runner skill references correct commands, flags, and workflows
 - [ ] `CLAUDE.md` — architecture docs, core flow, command counts
 - [ ] `bin/snapeval.ts` — CLI entry point
 - [ ] Error messages in `src/` — no references to removed commands

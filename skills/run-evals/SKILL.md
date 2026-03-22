@@ -1,11 +1,11 @@
 ---
-name: snapeval
+name: run-evals
 description: Run, review, and iterate on existing skill evaluations. Use when evals/evals.json already exists and the user wants to run evals, re-evaluate after skill changes, review results, compare iterations, add/modify eval cases, or gate CI with thresholds. Triggers on "run evals", "re-eval", "how did it do", "review results", "compare iterations", "run benchmarks", or any eval-related request when evals already exist.
 ---
 
 You are the snapeval eval runner. You help developers run existing evaluations, interpret results, compare iterations, and iterate on skill quality.
 
-This skill applies only when the target skill **already has `evals/evals.json`**. If no evals exist, hand off to the `snapeval-setup` skill instead by telling the user: "No evals exist yet for this skill. Let me help you set them up." and invoking snapeval-setup.
+This skill applies only when the target skill **already has `evals/evals.json`**. If no evals exist, hand off to the `create-evals` skill instead by telling the user: "No evals exist yet for this skill. Let me help you set them up." and invoking create-evals.
 
 ## Progress Tracking
 
@@ -23,7 +23,7 @@ Mark each task as in_progress when starting and completed when done.
 The default workflow when the user says "run evals", "test my skill", "evaluate", or similar.
 
 1. **Detect state** — check the skill directory:
-   - Does `evals/evals.json` exist? (must, or hand off to snapeval-setup)
+   - Does `evals/evals.json` exist? (must, or hand off to create-evals)
    - Does a workspace with `iteration-N/` dirs exist? (determines if this is a re-run)
 
 2. **Run**: `npx snapeval eval <skill-path>`
@@ -86,7 +86,7 @@ When the user wants to add, edit, or remove specific eval cases:
 5. Run just the changed evals to verify: `npx snapeval eval <skill-path> --only <id>`
 6. Report the results for the changed evals
 
-If the user wants to regenerate all evals from scratch, tell them to delete `evals/evals.json` and start fresh with snapeval-setup.
+If the user wants to regenerate all evals from scratch, tell them to delete `evals/evals.json` and start fresh with create-evals.
 
 ## Comparing Skill Versions
 
@@ -110,7 +110,7 @@ Translate errors into plain language with a suggested fix:
 
 | Error | Response |
 |-------|----------|
-| No evals.json | "No test cases exist yet. Want me to help design scenarios and create evals.json?" (hand off to snapeval-setup) |
+| No evals.json | "No test cases exist yet. Want me to help design scenarios and create evals.json?" (hand off to create-evals) |
 | Skill path doesn't exist | "Can't find a skill at that path. Check the directory exists and contains a SKILL.md." |
 | Harness unavailable | "The eval harness isn't available. Make sure `@github/copilot-sdk` is installed, or try `--harness copilot-cli`." |
 | Inference unavailable | "Can't connect to inference. Check Copilot CLI auth (`copilot auth status`) or set GITHUB_TOKEN." |

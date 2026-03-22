@@ -6,8 +6,8 @@
     "name": "Matan Tsach"
   },
   "skills": [
-    "skills/snapeval-setup",
-    "skills/snapeval"
+    "skills/create-evals",
+    "skills/run-evals"
   ],
   "scripts": [
     "scripts/snapeval-cli.sh"
