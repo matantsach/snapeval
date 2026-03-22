@@ -58,15 +58,44 @@ describe('gradeAssertions', () => {
     expect(written.summary.total).toBe(2);
   });
 
-  it('recovers from malformed LLM JSON response', async () => {
+  it('sends malformed JSON back to LLM for repair', async () => {
     tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'grader-'));
 
-    // Simulate LLM returning JSON with unescaped quotes in evidence
-    // This is the exact bug: evidence contains unescaped " that breaks JSON.parse
     vi.mocked(mockInference.chat)
+      // First call: grading returns malformed JSON (unescaped quotes)
       .mockResolvedValueOnce('{"results": [{"text": "check", "passed": true, "evidence": "Output says "hello" which matches"}]}')
-      .mockResolvedValueOnce('{"results": [{"text": "check", "passed": true, "evidence": "Output says "hello" which matches"}]}')
-      .mockResolvedValueOnce('{"results": [{"text": "check", "passed": true, "evidence": "Output says "hello" which matches"}]}');
+      // Second call: LLM fixes the JSON when asked
+      .mockResolvedValueOnce(JSON.stringify({
+        results: [{ text: 'check', passed: true, evidence: 'Output says hello which matches' }],
+      }));
+
+    const result = await gradeAssertions(
+      ['check'],
+      output,
+      tmpDir,
+      mockInference
+    );
+
+    expect(result).not.toBeNull();
+    expect(result!.assertion_results[0].passed).toBe(true);
+    expect(result!.assertion_results[0].evidence).toBe('Output says hello which matches');
+    // First call = grading, second call = fix request
+    expect(mockInference.chat).toHaveBeenCalledTimes(2);
+    // Fix prompt should reference the parse error
+    const fixCall = vi.mocked(mockInference.chat).mock.calls[1];
+    expect(fixCall[0][0].content).toContain('malformed');
+    // Debug file should exist
+    expect(fs.existsSync(path.join(tmpDir, 'grader-debug.txt'))).toBe(true);
+  });
+
+  it('fails gracefully when both grading and repair fail', async () => {
+    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'grader-'));
+
+    vi.mocked(mockInference.chat)
+      // First call: grading returns malformed JSON
+      .mockResolvedValueOnce('{"results": [{"text": "check", "passed": true, "evidence": "bad "quote" here"}]}')
+      // Second call: repair also returns malformed JSON
+      .mockResolvedValueOnce('still broken {{{');
 
     const result = await gradeAssertions(
       ['check'],
@@ -80,34 +109,7 @@ describe('gradeAssertions', () => {
     expect(result!.assertion_results).toHaveLength(1);
     expect(result!.assertion_results[0].passed).toBe(false);
     expect(result!.assertion_results[0].evidence).toContain('malformed JSON');
-
-    // Debug files should exist for diagnosis
-    expect(fs.existsSync(path.join(tmpDir, 'grader-debug-attempt-0.txt'))).toBe(true);
-  });
-
-  it('retries on malformed JSON and succeeds on retry', async () => {
-    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'grader-'));
-
-    vi.mocked(mockInference.chat)
-      // First attempt: malformed
-      .mockResolvedValueOnce('{"results": [{"text": "check", "passed": true, "evidence": "bad "quote" here"}]}')
-      // Second attempt: valid
-      .mockResolvedValueOnce(JSON.stringify({
-        results: [{ text: 'check', passed: true, evidence: 'good response' }],
-      }));
-
-    const result = await gradeAssertions(
-      ['check'],
-      output,
-      tmpDir,
-      mockInference
-    );
-
-    expect(result).not.toBeNull();
-    expect(result!.assertion_results[0].passed).toBe(true);
-    expect(result!.assertion_results[0].evidence).toBe('good response');
-    // Should have called chat twice (first failed, second succeeded)
-    expect(mockInference.chat).toHaveBeenCalledTimes(2);
+    expect(fs.existsSync(path.join(tmpDir, 'grader-debug.txt'))).toBe(true);
   });
 
   it('handles script: assertions', async () => {
