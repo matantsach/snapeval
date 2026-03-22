@@ -7,6 +7,7 @@ import type {
   EvalResults,
   EvalRunResult,
   GradingResult,
+  FeedbackData,
 } from '../types.js';
 import { WorkspaceManager } from '../engine/workspace.js';
 import { runEval } from '../engine/runner.js';
@@ -86,7 +87,7 @@ export async function evalCommand(
   skillPath: string,
   harness: Harness,
   inference: InferenceAdapter,
-  options: { workspace?: string; runs?: number; oldSkill?: string; concurrency?: number; only?: number[]; threshold?: number }
+  options: { workspace?: string; runs?: number; oldSkill?: string; concurrency?: number; only?: number[]; threshold?: number; feedback?: boolean }
 ): Promise<EvalResults> {
   const evalsPath = path.join(skillPath, 'evals', 'evals.json');
   if (!fs.existsSync(evalsPath)) {
@@ -223,6 +224,18 @@ export async function evalCommand(
     JSON.stringify(benchmarkWithMeta, (_key, value) =>
       typeof value === 'number' ? Math.round(value * 10000) / 10000 : value, 2)
   );
+
+  // Write feedback template if requested
+  if (options.feedback) {
+    const feedback: FeedbackData = {};
+    for (const run of evalRuns) {
+      feedback[`eval-${run.slug}`] = '';
+    }
+    fs.writeFileSync(
+      path.join(iterationDir, 'feedback.json'),
+      JSON.stringify(feedback, null, 2)
+    );
+  }
 
   // Check threshold if set (for CI gating)
   if (options.threshold !== undefined) {
