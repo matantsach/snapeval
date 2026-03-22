@@ -66,9 +66,7 @@ When the user has modified their SKILL.md and wants to see if results improved.
 
 ## Review & Iterate
 
-Triggered by "review", "show results", "how did it do", "what failed", "generate a review", "feedback template".
-
-**Important:** When the user asks for a review or feedback template, use `npx snapeval review` (not `eval`). The `review` command produces `feedback.json` which `eval` does not.
+Triggered by "review", "show results", "how did it do", "what failed".
 
 1. Run: `npx snapeval review <skill-path>` — runs eval + creates feedback.json template
 2. Report results using three signals:
