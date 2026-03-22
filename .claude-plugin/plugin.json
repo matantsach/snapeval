@@ -5,7 +5,10 @@
   "author": {
     "name": "Matan Tsach"
   },
-  "skills": "./skills/",
+  "skills": [
+    "skills/create-evals",
+    "skills/run-evals"
+  ],
   "scripts": [
     "scripts/snapeval-cli.sh"
   ]

@@ -1,0 +1,74 @@
+{
+  "skill_name": "run-evals",
+  "evals": [
+    {
+      "id": 1,
+      "label": "run evals when evals exist",
+      "slug": "run-existing-evals",
+      "prompt": "Run evals for `skills/code-reviewer`.",
+      "expected_output": "The assistant detects existing evals.json and runs `npx snapeval eval` without going through any interactive setup phases.",
+      "assertions": [
+        "The response runs or references running `npx snapeval eval`.",
+        "The response does not go through an interactive setup or scenario design flow.",
+        "The response interprets benchmark results or pass rates in plain language.",
+        "The response mentions the delta between with-skill and without-skill."
+      ],
+      "files": []
+    },
+    {
+      "id": 2,
+      "label": "re-eval after skill changes",
+      "slug": "re-eval-after-changes",
+      "prompt": "I just updated my SKILL.md for `skills/release-notes`. Run evals again and tell me if it improved.",
+      "expected_output": "The assistant runs evals, compares with previous iteration, and reports which evals improved or regressed.",
+      "assertions": [
+        "The response runs `npx snapeval eval` to create a new iteration.",
+        "The response compares the new iteration with the previous one.",
+        "The response shows per-eval changes or a net delta.",
+        "The response gives a clear verdict on whether the changes improved or regressed."
+      ],
+      "files": []
+    },
+    {
+      "id": 3,
+      "label": "hand off when no evals exist",
+      "slug": "no-evals-handoff",
+      "prompt": "Evaluate `skills/new-skill` — it has no evals yet.",
+      "expected_output": "The assistant detects no evals.json and hands off to snapeval-setup.",
+      "assertions": [
+        "The response indicates no evals exist for this skill.",
+        "The response offers to help set up evals or mentions the setup flow.",
+        "The response does not attempt to run `npx snapeval eval` when no evals.json exists."
+      ],
+      "files": []
+    },
+    {
+      "id": 4,
+      "label": "add a new eval case",
+      "slug": "add-eval-case",
+      "prompt": "Add an eval for empty input to my `skills/greeter` skill.",
+      "expected_output": "The assistant reads the existing evals.json, adds a new eval with the next available ID, preserves existing evals, and runs just the new one.",
+      "assertions": [
+        "The response reads the existing evals/evals.json first.",
+        "The response adds a new eval with the next available ID.",
+        "The response preserves all existing evals without renumbering.",
+        "The response uses --only to run just the new eval."
+      ],
+      "files": []
+    },
+    {
+      "id": 5,
+      "label": "review results with patterns",
+      "slug": "review-results",
+      "prompt": "How is my `skills/release-notes` skill doing?",
+      "expected_output": "The assistant runs review, interprets pass rates, surfaces patterns like always-pass/always-fail assertions, and suggests improvements.",
+      "assertions": [
+        "The response runs or references `npx snapeval eval` or `npx snapeval review`.",
+        "The response interprets results in plain language.",
+        "The response surfaces patterns such as always-pass, always-fail, or differentiating assertions.",
+        "The response suggests concrete improvements based on what failed."
+      ],
+      "files": []
+    }
+  ]
+}
