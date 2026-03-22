@@ -1,6 +1,6 @@
 {
   "name": "snapeval",
-  "version": "2.1.2",
+  "version": "2.2.0",
   "description": "Harness-agnostic eval runner for agentskills.io skills",
   "type": "module",
   "bin": {

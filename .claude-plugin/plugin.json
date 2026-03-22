@@ -1,6 +1,6 @@
 {
   "name": "snapeval",
-  "version": "2.1.2",
+  "version": "2.2.0",
   "description": "Eval runner for AI skills. Design test scenarios, run with/without skill comparisons, grade assertions, iterate on quality.",
   "author": {
     "name": "Matan Tsach"
