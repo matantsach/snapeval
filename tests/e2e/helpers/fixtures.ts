@@ -37,15 +37,6 @@ export function copyGreeterSkill(options?: {
   return skillDir;
 }
 
-export function addAssertionsToEvals(skillDir: string, assertions: string[]): void {
-  const evalsPath = path.join(skillDir, 'evals', 'evals.json');
-  const evalsFile = JSON.parse(fs.readFileSync(evalsPath, 'utf-8'));
-  for (const evalCase of evalsFile.evals) {
-    evalCase.assertions = assertions;
-  }
-  fs.writeFileSync(evalsPath, JSON.stringify(evalsFile, null, 2));
-}
-
 export function writeMinimalEvals(skillDir: string, options?: { withAssertions?: boolean }): void {
   const evalsDir = path.join(skillDir, 'evals');
   fs.mkdirSync(evalsDir, { recursive: true });
@@ -91,10 +82,6 @@ export function createEmptyDir(): string {
 export function getWorkspaceDir(skillDir: string): string {
   const skillName = path.basename(skillDir);
   return path.join(path.dirname(skillDir), `${skillName}-workspace`);
-}
-
-export function cleanup(dir: string): void {
-  fs.rmSync(dir, { recursive: true, force: true });
 }
 
 export function cleanupAll(): void {
