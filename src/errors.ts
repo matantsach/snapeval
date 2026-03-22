@@ -35,21 +35,7 @@ export class AdapterNotAvailableError extends SnapevalError {
 
 export class RateLimitError extends SnapevalError {
   constructor(adapterName: string) {
-    super(`${adapterName} rate limit exceeded. Try again later or use a different adapter.`);
+    super(`${adapterName} rate limit exceeded. Try again later or use a different adapter.`, 4);
     this.name = 'RateLimitError';
-  }
-}
-
-export class TimeoutError extends SnapevalError {
-  constructor(evalId: number, timeoutMs: number) {
-    super(`Eval ${evalId} timed out after ${timeoutMs}ms.`, 4);
-    this.name = 'TimeoutError';
-  }
-}
-
-export class GradingError extends SnapevalError {
-  constructor(evalId: number, detail: string) {
-    super(`Grading failed for eval ${evalId}: ${detail}`, 4);
-    this.name = 'GradingError';
   }
 }

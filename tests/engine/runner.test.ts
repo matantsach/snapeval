@@ -74,4 +74,20 @@ describe('runEval', () => {
 
     expect(fs.existsSync(path.join(evalDir, 'with_skill', 'transcript.log'))).toBe(true);
   });
+
+  it('uses old_skill directory when oldSkillPath is provided', async () => {
+    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'runner-'));
+    const evalDir = path.join(tmpDir, 'eval-test');
+    fs.mkdirSync(path.join(evalDir, 'with_skill', 'outputs'), { recursive: true });
+    fs.mkdirSync(path.join(evalDir, 'old_skill', 'outputs'), { recursive: true });
+
+    const result = await runEval(evalCase, '/path/to/skill', evalDir, mockHarness, '/path/to/old-skill');
+
+    expect(mockHarness.run).toHaveBeenCalledTimes(2);
+    expect(vi.mocked(mockHarness.run).mock.calls[0][0].skillPath).toBe('/path/to/skill');
+    expect(vi.mocked(mockHarness.run).mock.calls[1][0].skillPath).toBe('/path/to/old-skill');
+
+    expect(fs.existsSync(path.join(evalDir, 'old_skill', 'timing.json'))).toBe(true);
+    expect(fs.existsSync(path.join(evalDir, 'old_skill', 'outputs', 'output.txt'))).toBe(true);
+  });
 });

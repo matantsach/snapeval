@@ -16,13 +16,11 @@ import {
   assertGrading,
   assertNoGrading,
   assertBenchmark,
-  assertFeedback,
   listEvalDirs,
 } from './helpers/assertions.js';
 import { evalWithAssertions } from './helpers/stories/eval-with-assertions.js';
 import { evalWithoutAssertions } from './helpers/stories/eval-without-assertions.js';
 import { evalOldSkill } from './helpers/stories/eval-old-skill.js';
-import { reviewFlow } from './helpers/stories/review-flow.js';
 import { multiIteration } from './helpers/stories/multi-iteration.js';
 import { noEvalsJson } from './helpers/stories/error-paths.js';
 
@@ -100,19 +98,6 @@ describe.skipIf(!sdkAvailable)('SDK E2E', () => {
       assertOutput(`${evalDir}/with_skill`);
       assertOutput(`${evalDir}/old_skill`);
     }
-  });
-
-  it('US5: review produces feedback.json', async () => {
-    const skillDir = copyGreeterSkill({ skillMdOnly: true });
-    writeMinimalEvals(skillDir, { withAssertions: true });
-    const workspace = getWorkspaceDir(skillDir);
-    const { reviewResult } = await reviewFlow(adapter, skillDir, workspace);
-
-    expect(reviewResult.exitCode).toBe(0);
-
-    assertIterationDir(workspace, 1);
-    assertBenchmark(`${workspace}/iteration-1`);
-    assertFeedback(`${workspace}/iteration-1`);
   });
 
   it('US6: multiple iterations increment correctly', async () => {

@@ -19,14 +19,14 @@ npx tsx bin/snapeval.ts <command> <skill-path>  # Run any CLI command locally
 
 ### Core Flow
 
-`eval` (run with/without skill, grade assertions, compute benchmark) → `review` (eval + HTML report + feedback template)
+`eval` (run with/without skill, grade assertions, compute benchmark). Use `--feedback` to generate a `feedback.json` template for human review.
 
 ### Two Adapter Layers
 
 Each layer is an interface in `src/types.ts` with implementations in `src/adapters/`:
 
 - **Harness** (`src/adapters/harness/`) — How to invoke a skill. Implements `run()` with and without SKILL.md. Built-in: `CopilotSDKHarness` (default, uses `@github/copilot-sdk` with native skill loading via `skillDirectories`), `CopilotCLIHarness` (fallback, shells out to `copilot` CLI). Session isolation required per run.
-- **InferenceAdapter** (`src/adapters/inference/`) — LLM for grading assertions. `CopilotInference`, `CopilotSDKInference`, and `GitHubModelsInference` with auto-resolution in `resolve.ts`.
+- **InferenceAdapter** (`src/adapters/inference/`) — LLM for grading assertions. `CopilotSDKInference` and `GitHubModelsInference` with auto-resolution in `resolve.ts`.
 
 ### Engine Modules (`src/engine/`)
 
@@ -42,13 +42,13 @@ Each layer is an interface in `src/types.ts` with implementations in `src/adapte
 
 ### CLI Entry Point
 
-`bin/snapeval.ts` uses `commander` to wire two commands (`eval`, `review`), each in `src/commands/`. Commands resolve config, instantiate adapters, and delegate to engine modules.
+`bin/snapeval.ts` uses `commander` to wire one command (`eval`) in `src/commands/`. The command resolves config, instantiates adapters, and delegates to engine modules.
 
 ### Artifact Formats (agentskills.io spec)
 
 - `timing.json` — `{total_tokens, duration_ms}` per run
 - `grading.json` — `{assertion_results[], summary: {passed, failed, total, pass_rate}}` per run
-- `benchmark.json` — `{run_summary: {with_skill, without_skill, delta}}` per iteration
+- `benchmark.json` — `{run_summary: {with_skill, without_skill, delta}, metadata: {eval_count, eval_ids, skill_name, runs_per_eval, timestamp}}` per iteration
 - `feedback.json` — `{[evalSlug]: string}` template for human review
 
 ## Testing

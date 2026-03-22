@@ -1,40 +1,6 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { expect } from 'vitest';
-import type { E2ERunResult } from './types.js';
-
-export function assertEvalsJson(skillDir: string): void {
-  const evalsPath = path.join(skillDir, 'evals', 'evals.json');
-  expect(fs.existsSync(evalsPath), `evals.json should exist at ${evalsPath}`).toBe(true);
-
-  const content = JSON.parse(fs.readFileSync(evalsPath, 'utf-8'));
-  expect(content.evals).toBeDefined();
-  expect(Array.isArray(content.evals)).toBe(true);
-  expect(content.evals.length).toBeGreaterThan(0);
-
-  for (const evalCase of content.evals) {
-    expect(evalCase.id).toBeDefined();
-    expect(evalCase.prompt).toBeDefined();
-    expect(evalCase.expected_output).toBeDefined();
-    expect(evalCase.slug).toBeDefined();
-  }
-}
-
-export function assertEvalsRelevance(skillDir: string, keywords: string[]): void {
-  const evalsPath = path.join(skillDir, 'evals', 'evals.json');
-  const content = JSON.parse(fs.readFileSync(evalsPath, 'utf-8'));
-  const allText = JSON.stringify(content).toLowerCase();
-  const found = keywords.some((kw) => allText.includes(kw.toLowerCase()));
-  expect(found, `At least one eval should contain a keyword from [${keywords.join(', ')}]`).toBe(true);
-}
-
-export function assertEvalsNoAssertions(skillDir: string): void {
-  const evalsPath = path.join(skillDir, 'evals', 'evals.json');
-  const content = JSON.parse(fs.readFileSync(evalsPath, 'utf-8'));
-  for (const evalCase of content.evals) {
-    expect(evalCase.assertions, `Eval ${evalCase.id} should not have assertions`).toBeUndefined();
-  }
-}
 
 export function assertIterationDir(workspace: string, n: number): void {
   const iterDir = path.join(workspace, `iteration-${n}`);
@@ -113,26 +79,10 @@ export function assertFeedback(iterationDir: string): void {
   }
 }
 
-export function assertCleanState(dir: string): void {
-  const evalsDir = path.join(dir, 'evals');
-  if (fs.existsSync(evalsDir)) {
-    expect(fs.existsSync(path.join(evalsDir, 'evals.json')),
-      'evals.json should not have been created').toBe(false);
-  }
-}
-
-export function assertStdoutContains(result: E2ERunResult, pattern: RegExp): void {
-  expect(result.stdout).toMatch(pattern);
-}
-
-export function assertStderrContains(result: E2ERunResult, pattern: RegExp): void {
-  expect(result.stderr).toMatch(pattern);
-}
-
-export function findWorkspaceDir(skillDir: string): string {
-  const skillName = path.basename(skillDir);
-  const workspace = path.join(path.dirname(skillDir), `${skillName}-workspace`);
-  return workspace;
+export function assertSkillDifferentiation(evalDir: string): void {
+  const wsOutput = fs.readFileSync(path.join(evalDir, 'with_skill', 'outputs', 'output.txt'), 'utf-8');
+  const wosOutput = fs.readFileSync(path.join(evalDir, 'without_skill', 'outputs', 'output.txt'), 'utf-8');
+  expect(wsOutput).not.toBe(wosOutput);
 }
 
 export function listEvalDirs(iterationDir: string): string[] {

@@ -148,5 +148,5 @@ If the same command fails twice, do not retry blindly. Explain the issue and ask
 
 - Never ask the user to write evals.json or config files manually — that's your job
 - Always read the target skill's SKILL.md before generating scenarios
-- Only reference CLI commands that exist: `eval`, `review`
-- Only reference CLI flags that exist: `--harness`, `--inference`, `--workspace`, `--runs`, `--concurrency`, `--only`, `--threshold`, `--old-skill`, `--no-open`, `--verbose`
+- Only reference CLI commands that exist: `eval`
+- Only reference CLI flags that exist: `--harness`, `--inference`, `--workspace`, `--runs`, `--concurrency`, `--only`, `--threshold`, `--old-skill`, `--feedback`

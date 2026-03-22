@@ -73,6 +73,7 @@ export class PluginAdapter implements E2ETestAdapter {
         resolve({
           stdout: stdout ?? '',
           stderr: stderr ?? '',
+          // Plugin adapter cannot capture exit codes from `copilot -p` subprocess
           exitCode: null,
         });
       });

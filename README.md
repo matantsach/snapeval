@@ -127,17 +127,7 @@ npx snapeval eval [skill-dir] [options]
 | `--only <ids>` | Run specific eval IDs (e.g. `--only 1,3,5`) | all |
 | `--threshold <rate>` | Minimum pass rate 0-1 for exit code 0 | none |
 | `--old-skill <path>` | Compare against old skill version | none |
-| `--verbose` | Verbose output | off |
-
-### `review`
-
-Run eval + generate HTML report + open in browser.
-
-```bash
-npx snapeval review [skill-dir] [options]
-```
-
-Same flags as `eval`, plus `--no-open` to skip opening the browser.
+| `--feedback` | Write feedback.json template for human review | off |
 
 ### Exit codes
 
@@ -221,8 +211,7 @@ The SDK harness loads skills natively via `skillDirectories`, captures full tran
 
 | Adapter | Description |
 |---------|-------------|
-| `auto` | Copilot CLI if available, else GitHub Models API |
-| `copilot` | Copilot CLI (`copilot` binary) |
+| `auto` | Uses `@github/copilot-sdk` by default, falls back to GitHub Models API |
 | `copilot-sdk` | `@github/copilot-sdk` programmatic |
 | `github-models` | GitHub Models API (requires `GITHUB_TOKEN`) |
 

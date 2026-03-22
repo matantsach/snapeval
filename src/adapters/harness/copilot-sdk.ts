@@ -1,7 +1,7 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import type { Harness, HarnessRunResult } from '../../types.js';
-import { getClient, isSDKInstalled } from '../copilot-sdk-client.js';
+import { getClient } from '../copilot-sdk-client.js';
 
 export class CopilotSDKHarness implements Harness {
   readonly name = 'copilot-sdk';
@@ -18,7 +18,6 @@ export class CopilotSDKHarness implements Harness {
     fs.mkdirSync(options.outputDir, { recursive: true });
 
     // Dynamically import SDK for approveAll
-    // @ts-ignore — module may not be installed (optional dep)
     const { approveAll } = await import('@github/copilot-sdk');
 
     // Build session config
@@ -31,7 +30,7 @@ export class CopilotSDKHarness implements Harness {
 
     // Native skill loading: point skillDirectories at the skill's parent
     if (options.skillPath) {
-      sessionConfig.skillDirectories = [options.skillPath];
+      sessionConfig.skillDirectories = [path.dirname(options.skillPath)];
     }
 
     const session = await client.createSession(sessionConfig);
@@ -62,8 +61,8 @@ export class CopilotSDKHarness implements Harness {
       const events = await session.getMessages();
       const transcript = buildTranscript(events);
 
-      // Extract token count from events if available
-      const totalTokens = extractTokenCount(events);
+      // SDK assistant.usage events are ephemeral and not available via getMessages()
+      const totalTokens = 0;
 
       const durationMs = Date.now() - startMs;
 
@@ -80,7 +79,7 @@ export class CopilotSDKHarness implements Harness {
   }
 
   async isAvailable(): Promise<boolean> {
-    return isSDKInstalled();
+    return true;
   }
 }
 
@@ -98,7 +97,7 @@ function buildTranscript(events: any[]): string {
         lines.push(`[tool:start] ${event.data?.toolName ?? 'unknown'}(${JSON.stringify(event.data?.arguments ?? {})})`);
         break;
       case 'tool.execution_complete':
-        lines.push(`[tool:done] ${event.data?.toolName ?? 'unknown'} → ${truncate(event.data?.result ?? '', 200)}`);
+        lines.push(`[tool:done] ${event.data?.toolName ?? 'unknown'} → ${truncate(event.data?.result?.content ?? '', 200)}`);
         break;
       case 'skill.invoked':
         lines.push(`[skill] ${event.data?.name ?? 'unknown'} (${event.data?.path ?? ''})`);
@@ -109,16 +108,6 @@ function buildTranscript(events: any[]): string {
     }
   }
   return lines.join('\n');
-}
-
-function extractTokenCount(events: any[]): number {
-  let total = 0;
-  for (const event of events) {
-    if (event.type === 'assistant.usage') {
-      total += (event.data?.inputTokens ?? 0) + (event.data?.outputTokens ?? 0);
-    }
-  }
-  return total;
 }
 
 function truncate(str: string, max: number): string {

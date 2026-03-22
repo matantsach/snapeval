@@ -23,10 +23,8 @@ export class SDKAdapter implements E2ETestAdapter {
       // Copilot CLI must be installed (used as harness)
       execFileSync('copilot', ['--version'], { encoding: 'utf-8', stdio: 'pipe' });
       // @github/copilot-sdk must be importable
-      const { isSDKInstalled } = await import(
-        path.join(PROJECT_ROOT, 'src', 'adapters', 'copilot-sdk-client.ts')
-      );
-      return isSDKInstalled();
+      await import('@github/copilot-sdk');
+      return true;
     } catch {
       return false;
     }

@@ -138,4 +138,76 @@ describe('gradeAssertions', () => {
     const scriptResult = result!.assertion_results.find(a => a.text === 'script:check-json.sh');
     expect(scriptResult?.passed).toBe(true);
   });
+
+  describe('gradeExactMatch', () => {
+    it('passes when output matches exactly', async () => {
+      tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'grader-'));
+      const exactOutput: HarnessRunResult = {
+        raw: 'Hello, World!',
+        files: [],
+        total_tokens: 0,
+        duration_ms: 0,
+      };
+
+      const result = await gradeAssertions(
+        ['Output equals exactly: "Hello, World!"'],
+        exactOutput, tmpDir, mockInference
+      );
+
+      expect(result).not.toBeNull();
+      expect(result!.assertion_results[0].passed).toBe(true);
+      expect(mockInference.chat).not.toHaveBeenCalled();
+    });
+
+    it('fails when output does not match', async () => {
+      tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'grader-'));
+      const exactOutput: HarnessRunResult = {
+        raw: 'Hello, World!',
+        files: [],
+        total_tokens: 0,
+        duration_ms: 0,
+      };
+
+      const result = await gradeAssertions(
+        ['Output equals exactly: "Goodbye, World!"'],
+        exactOutput, tmpDir, mockInference
+      );
+
+      expect(result).not.toBeNull();
+      expect(result!.assertion_results[0].passed).toBe(false);
+      expect(result!.assertion_results[0].evidence).toContain('Expected');
+    });
+  });
+
+  describe('extractJSON from various formats', () => {
+    it('handles JSON wrapped in markdown code fence', async () => {
+      tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'grader-'));
+      vi.mocked(mockInference.chat).mockResolvedValue(
+        '```json\n{"results": [{"text": "check", "passed": true, "evidence": "ok"}]}\n```'
+      );
+
+      const result = await gradeAssertions(['check'], output, tmpDir, mockInference);
+      expect(result!.assertion_results[0].passed).toBe(true);
+    });
+
+    it('handles JSON wrapped in bare code fence', async () => {
+      tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'grader-'));
+      vi.mocked(mockInference.chat).mockResolvedValue(
+        '```\n{"results": [{"text": "check", "passed": true, "evidence": "ok"}]}\n```'
+      );
+
+      const result = await gradeAssertions(['check'], output, tmpDir, mockInference);
+      expect(result!.assertion_results[0].passed).toBe(true);
+    });
+
+    it('handles raw JSON with leading text', async () => {
+      tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'grader-'));
+      vi.mocked(mockInference.chat).mockResolvedValue(
+        'Here is the result:\n{"results": [{"text": "check", "passed": true, "evidence": "ok"}]}'
+      );
+
+      const result = await gradeAssertions(['check'], output, tmpDir, mockInference);
+      expect(result!.assertion_results[0].passed).toBe(true);
+    });
+  });
 });
