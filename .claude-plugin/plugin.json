@@ -1,6 +1,6 @@
 {
   "name": "snapeval",
-  "version": "2.1.1",
+  "version": "2.1.2",
   "description": "Semantic snapshot testing for AI skills. Zero assertions. AI-driven. Free inference.",
   "author": {
     "name": "Matan Tsach"

@@ -1,5 +1,13 @@
 # Changelog
 
+## [2.1.2](https://github.com/matantsach/snapeval/compare/snapeval-v2.1.1...snapeval-v2.1.2) (2026-03-22)
+
+
+### Bug Fixes
+
+* grader crashes on malformed LLM JSON — retry with graceful fallback ([#44](https://github.com/matantsach/snapeval/issues/44)) ([aad20ab](https://github.com/matantsach/snapeval/commit/aad20abf840a0ad09208488084a453b97506da65))
+* replace blind grading retry with validation loop ([#46](https://github.com/matantsach/snapeval/issues/46)) ([97223bb](https://github.com/matantsach/snapeval/commit/97223bbae2a7f2475206b8981ce5665de0a2e02a))
+
 ## [2.1.1](https://github.com/matantsach/snapeval/compare/snapeval-v2.1.0...snapeval-v2.1.1) (2026-03-21)
 
 
