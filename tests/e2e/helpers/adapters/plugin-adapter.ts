@@ -13,7 +13,7 @@ function buildPrompt(command: string, skillDir: string, flags?: Record<string, s
     case 'eval':
       return `Run evals for the skill at ${skillDir}. Run all evals without asking for confirmation.${extra}`;
     case 'review':
-      return `Review the skill at ${skillDir} — run evals and create a feedback file so I can leave notes.${extra}`;
+      return `Review the skill at ${skillDir}.${extra}`;
     default:
       return '';
   }
