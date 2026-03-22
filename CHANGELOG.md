@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.2.0](https://github.com/matantsach/snapeval/compare/snapeval-v2.1.2...snapeval-v2.2.0) (2026-03-22)
+
+
+### Features
+
+* split snapeval into create-evals and run-evals skills ([#48](https://github.com/matantsach/snapeval/issues/48)) ([dd5826a](https://github.com/matantsach/snapeval/commit/dd5826afed4b4b70879c69d704d8f12c60137fa6))
+
 ## [2.1.2](https://github.com/matantsach/snapeval/compare/snapeval-v2.1.1...snapeval-v2.1.2) (2026-03-22)
 
 
