@@ -40,6 +40,9 @@ export class GitHubModelsInference implements InferenceAdapter {
     const data = (await response.json()) as {
       choices: Array<{ message: { content: string } }>;
     };
+    if (!data.choices?.length) {
+      throw new Error('GitHub Models API returned no choices');
+    }
     return data.choices[0].message.content;
   }
 }

@@ -4,7 +4,7 @@ import { getClient } from '../copilot-sdk-client.js';
 export class CopilotSDKInference implements InferenceAdapter {
   readonly name = 'copilot-sdk';
 
-  async chat(messages: Message[], _options?: ChatOptions): Promise<string> {
+  async chat(messages: Message[], options?: ChatOptions): Promise<string> {
     const client = await getClient();
 
     const { approveAll } = await import('@github/copilot-sdk');
@@ -14,6 +14,9 @@ export class CopilotSDKInference implements InferenceAdapter {
     const systemContent = systemMessages.map((m) => m.content).join('\n');
     const userPrompt = nonSystemMessages.map((m) => m.content).join('\n');
 
+    // Note: ChatOptions (temperature, responseFormat) are not supported by the
+    // SDK's session config. The SDK controls these at the server level.
+    void options;
     const session = await client.createSession({
       model: 'gpt-4.1',
       ...(systemContent
