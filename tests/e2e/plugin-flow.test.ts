@@ -92,10 +92,6 @@ describe.skipIf(!copilotAvailable)('Plugin E2E', () => {
     }
   });
 
-  // US5 (review produces feedback.json) is covered by CLI and SDK E2E tests.
-  // Plugin tests go through Copilot's LLM which can't reliably distinguish
-  // `review` from `eval` — that's testing Copilot, not our code.
-
   it('US6: multiple iterations increment correctly', async () => {
     const skillDir = copyGreeterSkill({ skillMdOnly: true });
     writeMinimalEvals(skillDir);
