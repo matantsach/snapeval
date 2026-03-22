@@ -1,4 +1,4 @@
-#!/usr/bin/env tsx
+#!/usr/bin/env node
 
 // Suppress Node.js ExperimentalWarning (e.g., SQLite) from polluting output
 const _origEmit = process.emit;
@@ -7,6 +7,9 @@ process.emit = function (event: string, ...args: any[]) {
   if (event === 'warning' && args[0]?.name === 'ExperimentalWarning') return false;
   return _origEmit.apply(process, [event, ...args] as any);
 };
+
+import { readFileSync } from 'node:fs';
+const pkg = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf-8'));
 
 import { Command } from 'commander';
 import { resolveConfig } from '../src/config.js';
@@ -23,7 +26,7 @@ const program = new Command();
 program
   .name('snapeval')
   .description('Harness-agnostic eval runner for agentskills.io skills')
-  .version('2.0.0');
+  .version(pkg.version);
 
 // --- eval ---
 program

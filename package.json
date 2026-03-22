@@ -4,7 +4,7 @@
   "description": "Harness-agnostic eval runner for agentskills.io skills",
   "type": "module",
   "bin": {
-    "snapeval": "./bin/snapeval.ts"
+    "snapeval": "./dist/bin/snapeval.js"
   },
   "scripts": {
     "test": "vitest run",
